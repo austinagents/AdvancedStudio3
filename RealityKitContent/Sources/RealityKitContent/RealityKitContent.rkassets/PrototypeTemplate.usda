@@ -1,13 +1,29 @@
 #usda 1.0
 (
-    defaultPrim = "PrototypeTemplate"
+    defaultPrim = "OpticalMesh195"
     metersPerUnit = 1
     upAxis = "Y"
 )
 
-def Xform "PrototypeTemplate"
+def Xform "OpticalMesh195"
 {
+    def Xform "Environment"
+    {
+    }
+
     def Xform "ProductSlot"
+    {
+    }
+
+    def Xform "CameraRig"
+    {
+    }
+
+    def Xform "LightingRig"
+    {
+    }
+
+    def Xform "EffectRoot"
     {
     }
 }

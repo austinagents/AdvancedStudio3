@@ -14,6 +14,9 @@ let package = Package(
         )
     ],
     targets: [
-        .target(name: "RealityKitContent")
+        .target(
+            name: "RealityKitContent",
+            resources: [.process("Resources")]
+        )
     ]
 )

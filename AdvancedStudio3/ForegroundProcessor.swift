@@ -2,16 +2,24 @@ import CoreImage
 import Foundation
 import Vision
 
-enum PrototypeError: LocalizedError {
+enum StudioError: LocalizedError {
     case unreadableImage
     case noForeground
     case pngEncodingFailed
+    case missingSceneEntity(String)
+    case metalUnavailable
+    case exportFailed(String)
+    case validationFailed(String)
 
     var errorDescription: String? {
         switch self {
         case .unreadableImage: "The selected file is not a readable image."
         case .noForeground: "Vision could not find a foreground product."
         case .pngEncodingFailed: "The transparent PNG could not be encoded."
+        case .missingSceneEntity(let name): "The premium scene is missing \(name)."
+        case .metalUnavailable: "This Mac does not provide the required Metal rendering resources."
+        case .exportFailed(let message): "Export failed: \(message)"
+        case .validationFailed(let message): "Validation failed: \(message)"
         }
     }
 }
@@ -19,7 +27,7 @@ enum PrototypeError: LocalizedError {
 nonisolated struct ForegroundProcessor {
     private let context = CIContext()
 
-    func process(imageURL: URL) throws -> URL {
+    func process(imageURL: URL, job: RenderJob) throws -> URL {
         let hasAccess = imageURL.startAccessingSecurityScopedResource()
         defer {
             if hasAccess {
@@ -27,16 +35,21 @@ nonisolated struct ForegroundProcessor {
             }
         }
 
-        guard let input = CIImage(contentsOf: imageURL, options: [.applyOrientationProperty: true]) else {
-            throw PrototypeError.unreadableImage
+        guard let input = CIImage(
+            contentsOf: imageURL,
+            options: [.applyOrientationProperty: true]
+        ) else {
+            throw StudioError.unreadableImage
         }
+
+        try FileManager.default.copyItem(at: imageURL, to: job.originalImageURL)
 
         let request = VNGenerateForegroundInstanceMaskRequest()
         let handler = VNImageRequestHandler(ciImage: input)
         try handler.perform([request])
 
         guard let observation = request.results?.first else {
-            throw PrototypeError.noForeground
+            throw StudioError.noForeground
         }
 
         let maskBuffer = try observation.generateScaledMaskForImage(
@@ -59,17 +72,28 @@ nonisolated struct ForegroundProcessor {
             format: .RGBA8,
             colorSpace: colorSpace
         ) else {
-            throw PrototypeError.pngEncodingFailed
+            throw StudioError.pngEncodingFailed
         }
 
-        let outputURL = try PrototypeFiles.processedImageURL()
-        try pngData.write(to: outputURL, options: .atomic)
-        return outputURL
+        try pngData.write(to: job.processedImageURL, options: .atomic)
+        return job.processedImageURL
     }
 }
 
-nonisolated enum PrototypeFiles {
-    static func archiveDirectory() throws -> URL {
+nonisolated struct RenderJob: Sendable {
+    static let templateIdentifier = "optical-mesh-195"
+
+    let id: UUID
+    let createdAt: Date
+    let directory: URL
+    let originalImageURL: URL
+    let processedImageURL: URL
+    let videoURL: URL
+    let metadataURL: URL
+
+    static func create(for sourceURL: URL) throws -> RenderJob {
+        let id = UUID()
+        let createdAt = Date()
         let root = try FileManager.default.url(
             for: .applicationSupportDirectory,
             in: .userDomainMask,
@@ -78,19 +102,21 @@ nonisolated enum PrototypeFiles {
         )
         let directory = root
             .appendingPathComponent("AdvancedStudio3", isDirectory: true)
-            .appendingPathComponent("Archive", isDirectory: true)
+            .appendingPathComponent("Renders", isDirectory: true)
+            .appendingPathComponent(id.uuidString, isDirectory: true)
         try FileManager.default.createDirectory(
             at: directory,
             withIntermediateDirectories: true
         )
-        return directory
-    }
-
-    static func processedImageURL() throws -> URL {
-        try archiveDirectory().appendingPathComponent("product-cutout.png")
-    }
-
-    static func videoURL() throws -> URL {
-        try archiveDirectory().appendingPathComponent("product-video.mov")
+        let sourceExtension = sourceURL.pathExtension.isEmpty ? "image" : sourceURL.pathExtension
+        return RenderJob(
+            id: id,
+            createdAt: createdAt,
+            directory: directory,
+            originalImageURL: directory.appendingPathComponent("original.\(sourceExtension)"),
+            processedImageURL: directory.appendingPathComponent("product-cutout.png"),
+            videoURL: directory.appendingPathComponent("optical-mesh-195.mov"),
+            metadataURL: directory.appendingPathComponent("metadata.json")
+        )
     }
 }

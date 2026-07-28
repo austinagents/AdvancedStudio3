@@ -2,25 +2,23 @@ import RealityKit
 import SwiftUI
 
 struct ProductSceneView: View {
-    let imageURL: URL
+    let scene: PremiumAdScene
+    let frameIndex: Int
 
     var body: some View {
         RealityView { content in
-            do {
-                let template = try await PrototypeTemplateScene.load(
-                    imageURL: imageURL
-                )
-                content.add(template)
-            } catch {
-                do {
-                    let fallback = try await PrototypeTemplateScene
-                        .makeProgrammaticFallback(imageURL: imageURL)
-                    content.add(fallback)
-                } catch {
-                    assertionFailure("RealityKit could not load the product: \(error)")
-                }
+            content.add(scene.root)
+            content.camera = .virtual
+        } update: { content in
+            scene.apply(frameIndex: frameIndex)
+            content.camera = .virtual
+        } placeholder: {
+            ZStack {
+                Color.black
+                ProgressView("Loading scene…")
+                    .tint(.white)
+                    .foregroundStyle(.white)
             }
         }
-        .id(imageURL)
     }
 }

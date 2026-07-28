@@ -5,19 +5,35 @@ import SwiftData
 final class ArchiveRecord {
     @Attribute(.unique) var id: UUID
     var createdAt: Date
-    var imageFilename: String
-    var videoFilename: String
-    var durationSeconds: Double
-    var pixelWidth: Int
-    var pixelHeight: Int
+    var originalImageFilename: String = ""
+    var processedImageFilename: String = ""
+    var videoFilename: String = ""
+    var templateIdentifier: String = "optical-mesh-195"
+    var durationSeconds: Double = 8
+    var pixelWidth: Int = 1080
+    var pixelHeight: Int = 1920
+    var frameRate: Double = 30
+    var validationSummary: String = ""
 
-    init(imageURL: URL, videoURL: URL) {
-        id = UUID()
-        createdAt = Date()
-        imageFilename = imageURL.lastPathComponent
+    init(
+        id: UUID,
+        createdAt: Date,
+        originalImageURL: URL,
+        processedImageURL: URL,
+        videoURL: URL,
+        templateIdentifier: String,
+        validation: VideoValidationResult
+    ) {
+        self.id = id
+        self.createdAt = createdAt
+        originalImageFilename = originalImageURL.lastPathComponent
+        processedImageFilename = processedImageURL.lastPathComponent
         videoFilename = videoURL.lastPathComponent
-        durationSeconds = 5
-        pixelWidth = 1080
-        pixelHeight = 1920
+        self.templateIdentifier = templateIdentifier
+        durationSeconds = validation.durationSeconds
+        pixelWidth = validation.width
+        pixelHeight = validation.height
+        frameRate = validation.nominalFrameRate
+        validationSummary = validation.summary
     }
 }
