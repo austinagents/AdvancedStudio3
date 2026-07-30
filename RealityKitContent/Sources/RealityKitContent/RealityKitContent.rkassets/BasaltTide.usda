@@ -1,0 +1,17 @@
+#usda 1.0
+(
+    defaultPrim = "BasaltTide"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+def Xform "BasaltTide" {
+    def Xform "GrottoWorld" {}
+    def Xform "BasaltBasin" {}
+    def Xform "DrainChannelRoot" {}
+    def Xform "LiquidSheet" {}
+    def Xform "LiquidThreadRoot" {}
+    def Xform "SuspendedProductSlot" {}
+    def Xform "CornerDataRoot" {}
+    def Xform "MacroCameraRail" {}
+    def Xform "UnderwaterLightRig" {}
+}

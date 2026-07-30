@@ -1,0 +1,16 @@
+#usda 1.0
+(
+    defaultPrim = "CanyonExposure"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+def Xform "CanyonExposure" {
+    def Xform "DesertWorld" {}
+    def Xform "CanyonBase" {}
+    def Xform "StrataRoot" {}
+    def Xform "ErosionParticleRoot" {}
+    def Xform "EmbeddedProductSlot" {}
+    def Xform "GroundEtchedCopy" {}
+    def Xform "CraneCameraRig" {}
+    def Xform "DesertSunRig" {}
+}

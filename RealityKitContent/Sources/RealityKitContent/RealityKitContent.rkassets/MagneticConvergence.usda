@@ -1,0 +1,16 @@
+#usda 1.0
+(
+    defaultPrim = "MagneticConvergence"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+def Xform "MagneticConvergence" {
+    def Xform "WorkshopWorld" {}
+    def Xform "FieldPathRoot" {}
+    def Xform "FreePlateRoot" {}
+    def Xform "HaloSegmentRoot" {}
+    def Xform "ProductSlot" {}
+    def Xform "MechanicalCopyRoot" {}
+    def Xform "OrbitCameraRig" {}
+    def Xform "PulseLightRoot" {}
+}

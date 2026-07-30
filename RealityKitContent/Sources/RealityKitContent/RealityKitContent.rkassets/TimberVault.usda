@@ -1,0 +1,15 @@
+#usda 1.0
+(
+    defaultPrim = "TimberVault"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+def Xform "TimberVault" {
+    def Xform "MuseumAxis" {}
+    def Xform "RibRoot" {}
+    def Xform "CenterHatch" {}
+    def Xform "ProductElevator" {}
+    def Xform "SuspendedPlaqueRoot" {}
+    def Xform "AxialDollyRig" {}
+    def Xform "ClerestoryLightRig" {}
+}

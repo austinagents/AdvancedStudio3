@@ -33,7 +33,7 @@ final class StudioSession {
             case .processing: "Isolating product"
             case .loading: "Building RealityKit scene"
             case .ready: "Ready to preview"
-            case .exporting: "Rendering 240 frames"
+            case .exporting: "Rendering frames"
             case .complete: "Export validated"
             case .failed: "Needs attention"
             }
@@ -41,36 +41,107 @@ final class StudioSession {
     }
 
     var state: State = .empty
+    var selectedTemplate: StudioTemplate = .opticalMesh
     var job: RenderJob?
     var processedImageURL: URL?
-    var scene: PremiumAdScene?
+    var scene: StudioScene?
+    var sceneRevision = 0
     var frameIndex = 0
     var isPlaying = false
     var exportProgress = 0.0
     var validation: VideoValidationResult?
     private var playbackTask: Task<Void, Never>?
+    private var playbackGeneration = 0
+    private var sceneLoadGeneration = 0
+
+    var specification: AdSpecification {
+        selectedTemplate.specification
+    }
 
     var currentTime: Double {
-        Double(frameIndex) / Double(PremiumAdScene.frameRate)
+        specification.seconds(for: frameIndex)
+    }
+
+    var durationLabel: String {
+        String(format: "%.1f", specification.duration)
+    }
+
+    var stateLabel: String {
+        state == .exporting
+            ? "Rendering \(specification.frameCount) frames"
+            : state.label
     }
 
     func importProduct(url: URL) async {
         stop()
+        sceneLoadGeneration += 1
+        let loadGeneration = sceneLoadGeneration
         state = .processing
+        scene = nil
         validation = nil
         exportProgress = 0
         do {
-            let job = try RenderJob.create(for: url)
+            let job = try RenderJob.create(for: url, template: selectedTemplate)
             self.job = job
             let processed = try await Task.detached {
                 try ForegroundProcessor().process(imageURL: url, job: job)
             }.value
             processedImageURL = processed
             state = .loading
-            scene = try await PremiumAdScene.load(imageURL: processed)
-            frameIndex = PremiumAdScene.heroFrame
+            let loadedScene = try await StudioScene.load(
+                template: selectedTemplate,
+                imageURL: processed
+            )
+            guard loadGeneration == sceneLoadGeneration else { return }
+            scene = loadedScene
+            sceneRevision += 1
+            frameIndex = selectedTemplate.heroFrame
             state = .ready
         } catch {
+            guard loadGeneration == sceneLoadGeneration else { return }
+            scene = nil
+            state = .failed(error.localizedDescription)
+        }
+    }
+
+    func selectTemplate(_ template: StudioTemplate) async {
+        guard template != selectedTemplate,
+              state != .processing,
+              state != .exporting else {
+            return
+        }
+        stop()
+        sceneLoadGeneration += 1
+        let loadGeneration = sceneLoadGeneration
+        selectedTemplate = template
+        validation = nil
+        job = job?.retarget(to: template)
+        scene = nil
+        frameIndex = 0
+        guard let processedImageURL else {
+            state = .empty
+            return
+        }
+        state = .loading
+        do {
+            let loadedScene = try await StudioScene.load(
+                template: template,
+                imageURL: processedImageURL
+            )
+            guard loadGeneration == sceneLoadGeneration,
+                  selectedTemplate == template else {
+                return
+            }
+            scene = loadedScene
+            sceneRevision += 1
+            frameIndex = template.heroFrame
+            state = .ready
+        } catch {
+            guard loadGeneration == sceneLoadGeneration,
+                  selectedTemplate == template else {
+                return
+            }
+            scene = nil
             state = .failed(error.localizedDescription)
         }
     }
@@ -81,15 +152,27 @@ final class StudioSession {
 
     func play() {
         guard scene != nil, !isPlaying else { return }
-        if frameIndex >= PremiumAdScene.frameCount - 1 {
+        if frameIndex >= specification.finalFrameIndex {
             frameIndex = 0
         }
+        playbackGeneration += 1
+        let generation = playbackGeneration
         isPlaying = true
         playbackTask = Task { [weak self] in
-            while let self, !Task.isCancelled, self.isPlaying {
-                try? await Task.sleep(for: .milliseconds(33))
-                if self.frameIndex >= PremiumAdScene.frameCount - 1 {
-                    self.stop()
+            while let self,
+                  !Task.isCancelled,
+                  self.isPlaying,
+                  generation == self.playbackGeneration {
+                do {
+                    try await Task.sleep(for: self.specification.frameDuration)
+                } catch {
+                    return
+                }
+                guard generation == self.playbackGeneration else { return }
+                if self.frameIndex >= self.specification.finalFrameIndex {
+                    self.isPlaying = false
+                    self.playbackTask = nil
+                    return
                 } else {
                     self.frameIndex += 1
                 }
@@ -98,6 +181,7 @@ final class StudioSession {
     }
 
     func stop() {
+        playbackGeneration += 1
         isPlaying = false
         playbackTask?.cancel()
         playbackTask = nil
@@ -111,10 +195,7 @@ final class StudioSession {
 
     func scrub(to value: Double) {
         stop()
-        frameIndex = min(
-            PremiumAdScene.frameCount - 1,
-            max(0, Int((value * Double(PremiumAdScene.frameRate)).rounded()))
-        )
+        frameIndex = specification.frameIndex(at: value)
         scene?.apply(frameIndex: frameIndex)
     }
 
@@ -126,7 +207,8 @@ final class StudioSession {
         do {
             let result = try await RealityKitVideoExporter().export(
                 processedImageURL: processedImageURL,
-                job: job
+                job: job,
+                template: selectedTemplate
             ) { [weak self] progress in
                 self?.exportProgress = progress
             }
@@ -137,7 +219,7 @@ final class StudioSession {
                 originalImageURL: job.originalImageURL,
                 processedImageURL: job.processedImageURL,
                 videoURL: job.videoURL,
-                templateIdentifier: RenderJob.templateIdentifier,
+                templateIdentifier: job.templateIdentifier,
                 validation: result
             )
             modelContext.insert(record)
@@ -198,6 +280,9 @@ struct ContentView: View {
             guard case .success(let urls) = result, let url = urls.first else { return }
             Task { await session.importProduct(url: url) }
         }
+        .task {
+            await SceneAuditRenderer.runIfRequested()
+        }
     }
 
     private var header: some View {
@@ -222,7 +307,7 @@ struct ContentView: View {
             Button {
                 Task { await session.export(modelContext: modelContext) }
             } label: {
-                Label("Export 8s MOV", systemImage: "arrow.up.forward")
+                Label("Export \(session.durationLabel)s MOV", systemImage: "arrow.up.forward")
                     .fontWeight(.semibold)
                     .padding(.horizontal, 8)
             }
@@ -239,7 +324,7 @@ struct ContentView: View {
             Circle()
                 .fill(statusColor)
                 .frame(width: 7, height: 7)
-            Text(session.state.label)
+            Text(session.stateLabel)
                 .font(.caption.weight(.medium))
         }
         .padding(.horizontal, 12)
@@ -251,51 +336,84 @@ struct ContentView: View {
     private var templateLibrary: some View {
         VStack(alignment: .leading, spacing: 16) {
             panelTitle("TEMPLATE LIBRARY", subtitle: "Curated motion systems")
-            VStack(alignment: .leading, spacing: 10) {
-                ZStack(alignment: .bottomLeading) {
-                    RoundedRectangle(cornerRadius: 14)
-                        .fill(
-                            LinearGradient(
-                                colors: [.blue.opacity(0.7), .indigo.opacity(0.25), .black],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                    Circle()
-                        .fill(.blue.opacity(0.28))
-                        .blur(radius: 18)
-                        .frame(width: 110, height: 110)
-                        .offset(x: 68, y: -25)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("PREMIUM 01")
-                            .font(.caption2.weight(.bold))
-                            .tracking(1.2)
-                        Text("Optical Mesh")
-                            .font(.headline)
-                    }
-                    .padding(14)
+            VStack(spacing: 14) {
+                ForEach(StudioTemplate.userFacingCases) { template in
+                    templateCard(template)
                 }
-                .frame(height: 170)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(Color.blue, lineWidth: 2)
-                )
-                HStack {
-                    Label("Selected", systemImage: "checkmark.circle.fill")
-                        .foregroundStyle(.blue)
-                    Spacer()
-                    Text("8.0s")
-                        .foregroundStyle(.secondary)
-                }
-                .font(.caption.weight(.medium))
             }
             Spacer()
-            Text("One finished template. Additional templates will appear here without changing the studio workflow.")
+            Text("Only validated native templates appear in the production library.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(20)
+    }
+
+    private func templateCard(_ template: StudioTemplate) -> some View {
+        let selected = session.selectedTemplate == template
+        return Button {
+            Task { await session.selectTemplate(template) }
+        } label: {
+            VStack(alignment: .leading, spacing: 8) {
+                ZStack(alignment: .bottomLeading) {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(
+                            LinearGradient(
+                                colors: template == .opticalMesh
+                                    ? [.blue.opacity(0.72), .indigo.opacity(0.25), .black]
+                                    : [
+                                        Color(red: 0.58, green: 0.27, blue: 0.08),
+                                        Color(red: 0.18, green: 0.10, blue: 0.07),
+                                        .black
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                    if template == .opticalMesh {
+                        Circle()
+                            .fill(.blue.opacity(0.28))
+                            .blur(radius: 16)
+                            .frame(width: 90, height: 90)
+                            .offset(x: 64, y: -18)
+                    } else {
+                        Capsule()
+                            .fill(Color.orange.opacity(0.26))
+                            .blur(radius: 12)
+                            .frame(width: 150, height: 42)
+                            .rotationEffect(.degrees(-18))
+                            .offset(x: 54, y: -22)
+                    }
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(template.libraryIndex)
+                            .font(.caption2.weight(.bold))
+                            .tracking(1.2)
+                        Text(template.name)
+                            .font(.headline)
+                    }
+                    .padding(12)
+                }
+                .frame(height: 112)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(selected ? Color.blue : .white.opacity(0.1), lineWidth: selected ? 2 : 1)
+                )
+                HStack {
+                    Label(
+                        selected ? "Selected" : "Select",
+                        systemImage: selected ? "checkmark.circle.fill" : "circle"
+                    )
+                    .foregroundStyle(selected ? .blue : .secondary)
+                    Spacer()
+                    Text(String(format: "%.1fs", template.specification.duration))
+                        .foregroundStyle(.secondary)
+                }
+                .font(.caption.weight(.medium))
+            }
+        }
+        .buttonStyle(.plain)
+        .disabled(session.state == .processing || session.state == .exporting)
     }
 
     private var preview: some View {
@@ -319,6 +437,7 @@ struct ContentView: View {
 
                 if let scene = session.scene {
                     ProductSceneView(scene: scene, frameIndex: session.frameIndex)
+                        .id(session.sceneRevision)
                         .clipShape(RoundedRectangle(cornerRadius: 18))
                 } else {
                     emptyPreview
@@ -341,7 +460,7 @@ struct ContentView: View {
                         .frame(width: 22)
                 }
                 .buttonStyle(.borderedProminent)
-                Text("\(time(session.currentTime))  /  8.0")
+                Text("\(time(session.currentTime))  /  \(session.durationLabel)")
                     .font(.system(.callout, design: .monospaced).weight(.medium))
                     .foregroundStyle(.secondary)
             }
@@ -367,7 +486,10 @@ struct ContentView: View {
 
     private var controls: some View {
         VStack(alignment: .leading, spacing: 22) {
-            panelTitle("PRODUCT / SCENE", subtitle: "Template 195 · Optical Mesh")
+            panelTitle(
+                "PRODUCT / SCENE",
+                subtitle: session.selectedTemplate.sceneSubtitle
+            )
             GroupBox {
                 VStack(alignment: .leading, spacing: 13) {
                     if let url = session.processedImageURL {
@@ -401,8 +523,8 @@ struct ContentView: View {
                 .padding(5)
             }
 
-            detailRow("Template", "Optical Mesh")
-            detailRow("Duration", "8.0 seconds")
+            detailRow("Template", session.selectedTemplate.name)
+            detailRow("Duration", "\(session.durationLabel) seconds")
             detailRow("Output", "1080 × 1920")
             detailRow("Renderer", "RealityKit + Metal")
 
@@ -411,7 +533,10 @@ struct ContentView: View {
                     HStack {
                         Text("Rendering")
                         Spacer()
-                        Text("\(Int(session.exportProgress * 360)) / 360")
+                        Text(
+                            "\(Int(session.exportProgress * Double(session.specification.frameCount)))"
+                                + " / \(session.specification.frameCount)"
+                        )
                             .monospacedDigit()
                     }
                     .font(.caption.weight(.medium))
@@ -460,23 +585,26 @@ struct ContentView: View {
                         get: { session.currentTime },
                         set: session.scrub(to:)
                     ),
-                    in: 0...12
+                    in: 0...session.specification.duration
                 )
-                Text("8.0")
+                Text(session.durationLabel)
                     .font(.system(.caption, design: .monospaced).weight(.semibold))
             }
 
             GeometryReader { geometry in
                 let available = geometry.size.width
                 HStack(spacing: 3) {
-                    phase("CAMERA PUSH", "0–6.3s", color: .cyan)
-                        .frame(width: available * 2 / 12 - 2)
-                    phase("LATTICE FORM", "0.7–4.8s", color: .blue)
-                        .frame(width: available * 4 / 12 - 2)
-                    phase("PRODUCT REVEAL", "4.1–5.5s", color: .indigo)
-                        .frame(width: available * 4 / 12 - 2)
-                    phase("COPY / HOLD", "6.2–8s", color: .purple)
-                        .frame(width: available * 2 / 12 - 2)
+                    let colors: [Color] = [.cyan, .blue, .indigo, .purple]
+                    ForEach(
+                        Array(session.selectedTemplate.timelinePhases.enumerated()),
+                        id: \.element.id
+                    ) { index, item in
+                        phase(item.title, item.range, color: colors[index])
+                            .frame(
+                                width: available * item.width
+                                    / session.specification.duration - 2
+                            )
+                    }
                 }
             }
             .frame(height: 48)

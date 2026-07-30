@@ -1,0 +1,15 @@
+#usda 1.0
+(
+    defaultPrim = "PaperAperture"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+def Xform "PaperAperture" {
+    def Xform "CycloramaRoot" {}
+    def Xform "PaperIrisRoot" {}
+    def Xform "ProductWell" {}
+    def Xform "ProductLift" {}
+    def Xform "CircularCopyRoot" {}
+    def Xform "TopCameraRig" {}
+    def Xform "UmbrellaLightRig" {}
+}

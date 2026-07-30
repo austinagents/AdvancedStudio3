@@ -18,14 +18,18 @@ struct VideoValidationResult: Codable, Sendable {
     let firstFrameReadable: Bool
     let finalFrameReadable: Bool
     let frameContentChanges: Bool
+    let expectedWidth: Int
+    let expectedHeight: Int
+    let expectedFrameRate: Double
+    let expectedDurationSeconds: Double
 
     var isValid: Bool {
         fileExists
             && codec == "H.264"
-            && width == 1080
-            && height == 1920
-            && abs(nominalFrameRate - 30) < 0.01
-            && abs(durationSeconds - 8) < (1.0 / 600.0)
+            && width == expectedWidth
+            && height == expectedHeight
+            && abs(nominalFrameRate - expectedFrameRate) < 0.01
+            && abs(durationSeconds - expectedDurationSeconds) < (1.0 / 600.0)
             && videoTrackCount == 1
             && firstFrameReadable
             && finalFrameReadable
@@ -41,17 +45,17 @@ struct VideoValidationResult: Codable, Sendable {
 
 @MainActor
 final class RealityKitVideoExporter {
-    private let width = 1080
-    private let height = 1920
-    private let frameRate: Int32 = 30
-    private let frameCount = 240
-
     func export(
         processedImageURL: URL,
         job: RenderJob,
+        template: StudioTemplate,
         progress: @escaping @MainActor (Double) -> Void
     ) async throws -> VideoValidationResult {
-        let scene = try await PremiumAdScene.load(imageURL: processedImageURL)
+        let specification = template.specification
+        let scene = try await StudioScene.load(
+            template: template,
+            imageURL: processedImageURL
+        )
         guard let device = MTLCreateSystemDefaultDevice(),
               let commandQueue = device.makeCommandQueue() else {
             throw StudioError.metalUnavailable
@@ -69,8 +73,8 @@ final class RealityKitVideoExporter {
         let writer = try AVAssetWriter(outputURL: job.videoURL, fileType: .mov)
         let settings: [String: Any] = [
             AVVideoCodecKey: AVVideoCodecType.h264,
-            AVVideoWidthKey: width,
-            AVVideoHeightKey: height,
+            AVVideoWidthKey: specification.width,
+            AVVideoHeightKey: specification.height,
             AVVideoColorPropertiesKey: [
                 AVVideoColorPrimariesKey: AVVideoColorPrimaries_ITU_R_709_2,
                 AVVideoTransferFunctionKey: AVVideoTransferFunction_ITU_R_709_2,
@@ -78,8 +82,8 @@ final class RealityKitVideoExporter {
             ],
             AVVideoCompressionPropertiesKey: [
                 AVVideoAverageBitRateKey: 12_000_000,
-                AVVideoExpectedSourceFrameRateKey: frameRate,
-                AVVideoMaxKeyFrameIntervalKey: frameRate,
+                AVVideoExpectedSourceFrameRateKey: specification.frameRate,
+                AVVideoMaxKeyFrameIntervalKey: specification.frameRate,
                 AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel
             ]
         ]
@@ -87,8 +91,8 @@ final class RealityKitVideoExporter {
         input.expectsMediaDataInRealTime = false
         let attributes: [String: Any] = [
             kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
-            kCVPixelBufferWidthKey as String: width,
-            kCVPixelBufferHeightKey as String: height,
+            kCVPixelBufferWidthKey as String: specification.width,
+            kCVPixelBufferHeightKey as String: specification.height,
             kCVPixelBufferMetalCompatibilityKey as String: true,
             kCVPixelBufferIOSurfacePropertiesKey as String: [:]
         ]
@@ -115,7 +119,7 @@ final class RealityKitVideoExporter {
             throw StudioError.metalUnavailable
         }
 
-        for frameIndex in 0..<frameCount {
+        for frameIndex in 0..<specification.frameCount {
             while !input.isReadyForMoreMediaData {
                 try await Task.sleep(for: .milliseconds(2))
             }
@@ -133,8 +137,8 @@ final class RealityKitVideoExporter {
                 pixelBuffer,
                 nil,
                 .bgra8Unorm,
-                width,
-                height,
+                specification.width,
+                specification.height,
                 0,
                 &optionalMetalTexture
             )
@@ -148,26 +152,39 @@ final class RealityKitVideoExporter {
             let output = try RealityRenderer.CameraOutput(
                 .singleProjection(colorTexture: texture)
             )
-            try await render(renderer: renderer, output: output, commandQueue: commandQueue)
+            try await render(
+                renderer: renderer,
+                output: output,
+                commandQueue: commandQueue,
+                frameRate: specification.frameRate
+            )
 
             let presentationTime = CMTime(
                 value: CMTimeValue(frameIndex),
-                timescale: frameRate
+                timescale: specification.frameRate
             )
             guard adaptor.append(pixelBuffer, withPresentationTime: presentationTime) else {
                 throw writer.error ?? StudioError.exportFailed("Frame \(frameIndex) was rejected.")
             }
-            progress(Double(frameIndex + 1) / Double(frameCount))
+            progress(Double(frameIndex + 1) / Double(specification.frameCount))
         }
 
         input.markAsFinished()
-        writer.endSession(atSourceTime: CMTime(value: 240, timescale: 30))
+        writer.endSession(
+            atSourceTime: CMTime(
+                value: CMTimeValue(specification.frameCount),
+                timescale: specification.frameRate
+            )
+        )
         await writer.finishWriting()
         guard writer.status == .completed else {
             throw writer.error ?? StudioError.exportFailed("The writer did not complete.")
         }
 
-        let validation = try await VideoValidator().validate(url: job.videoURL)
+        let validation = try await VideoValidator().validate(
+            url: job.videoURL,
+            expected: specification
+        )
         let metadata = try JSONEncoder.studio.encode(validation)
         try metadata.write(to: job.metadataURL, options: .atomic)
         guard validation.isValid else {
@@ -179,7 +196,8 @@ final class RealityKitVideoExporter {
     private func render(
         renderer: RealityRenderer,
         output: RealityRenderer.CameraOutput,
-        commandQueue: MTLCommandQueue
+        commandQueue: MTLCommandQueue,
+        frameRate: Int32
     ) async throws {
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             throw StudioError.metalUnavailable
@@ -192,7 +210,7 @@ final class RealityKitVideoExporter {
         try await withCheckedThrowingContinuation { continuation in
             do {
                 try renderer.updateAndRender(
-                    deltaTime: 1.0 / 30.0,
+                    deltaTime: 1.0 / Double(frameRate),
                     cameraOutput: output,
                     onComplete: { _ in continuation.resume() },
                     actionsBeforeRender: [.wait(for: event, value: signalValue)]
@@ -205,7 +223,10 @@ final class RealityKitVideoExporter {
 }
 
 nonisolated struct VideoValidator {
-    func validate(url: URL) async throws -> VideoValidationResult {
+    func validate(
+        url: URL,
+        expected: AdSpecification
+    ) async throws -> VideoValidationResult {
         let asset = AVURLAsset(url: url)
         let duration = try await asset.load(.duration)
         let tracks = try await asset.loadTracks(withMediaType: .video)
@@ -224,11 +245,17 @@ nonisolated struct VideoValidator {
         } ?? "Unknown"
 
         let first = try await frameSignature(asset: asset, time: .zero)
-        let finalTime = CMTime(value: 239, timescale: 30)
+        let finalTime = CMTime(
+            value: CMTimeValue(expected.finalFrameIndex),
+            timescale: expected.frameRate
+        )
         let final = try await frameSignature(asset: asset, time: finalTime)
         let middle = try await frameSignature(
             asset: asset,
-            time: CMTime(value: 180, timescale: 30)
+            time: CMTime(
+                value: CMTimeValue(expected.frameCount / 2),
+                timescale: expected.frameRate
+            )
         )
 
         return VideoValidationResult(
@@ -241,7 +268,11 @@ nonisolated struct VideoValidator {
             videoTrackCount: tracks.count,
             firstFrameReadable: first != nil,
             finalFrameReadable: final != nil,
-            frameContentChanges: first != middle || middle != final
+            frameContentChanges: first != middle || middle != final,
+            expectedWidth: expected.width,
+            expectedHeight: expected.height,
+            expectedFrameRate: Double(expected.frameRate),
+            expectedDurationSeconds: expected.duration
         )
     }
 

@@ -81,17 +81,16 @@ nonisolated struct ForegroundProcessor {
 }
 
 nonisolated struct RenderJob: Sendable {
-    static let templateIdentifier = "optical-mesh-195"
-
     let id: UUID
     let createdAt: Date
+    let templateIdentifier: String
     let directory: URL
     let originalImageURL: URL
     let processedImageURL: URL
     let videoURL: URL
     let metadataURL: URL
 
-    static func create(for sourceURL: URL) throws -> RenderJob {
+    static func create(for sourceURL: URL, template: StudioTemplate) throws -> RenderJob {
         let id = UUID()
         let createdAt = Date()
         let root = try FileManager.default.url(
@@ -112,11 +111,25 @@ nonisolated struct RenderJob: Sendable {
         return RenderJob(
             id: id,
             createdAt: createdAt,
+            templateIdentifier: template.rawValue,
             directory: directory,
             originalImageURL: directory.appendingPathComponent("original.\(sourceExtension)"),
             processedImageURL: directory.appendingPathComponent("product-cutout.png"),
-            videoURL: directory.appendingPathComponent("optical-mesh-195.mov"),
+            videoURL: directory.appendingPathComponent("\(template.rawValue).mov"),
             metadataURL: directory.appendingPathComponent("metadata.json")
+        )
+    }
+
+    func retarget(to template: StudioTemplate) -> RenderJob {
+        RenderJob(
+            id: id,
+            createdAt: createdAt,
+            templateIdentifier: template.rawValue,
+            directory: directory,
+            originalImageURL: originalImageURL,
+            processedImageURL: processedImageURL,
+            videoURL: directory.appendingPathComponent("\(template.rawValue).mov"),
+            metadataURL: metadataURL
         )
     }
 }

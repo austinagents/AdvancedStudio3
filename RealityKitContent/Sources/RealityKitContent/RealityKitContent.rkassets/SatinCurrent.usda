@@ -1,0 +1,14 @@
+#usda 1.0
+(
+    defaultPrim = "SatinCurrent"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+def Xform "SatinCurrent" {
+    def Xform "WarmCyclorama" {}
+    def Xform "RibbonSplineRoot" {}
+    def Xform "ProductOcclusionSlot" {}
+    def Xform "CounterCopyRail" {}
+    def Xform "LateralCameraRail" {}
+    def Xform "HorizontalStripRig" {}
+}

@@ -1,0 +1,37 @@
+#usda 1.0
+(
+    defaultPrim = "MineralFold"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def Xform "MineralFold"
+{
+    def Xform "Environment"
+    {
+    }
+
+    def Xform "TerrainRoot"
+    {
+    }
+
+    def Xform "VeinRoot"
+    {
+    }
+
+    def Xform "ProductSlot"
+    {
+    }
+
+    def Xform "CopyRoot"
+    {
+    }
+
+    def Xform "CameraRig"
+    {
+    }
+
+    def Xform "LightingRig"
+    {
+    }
+}

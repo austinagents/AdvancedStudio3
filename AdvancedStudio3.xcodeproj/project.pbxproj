@@ -6,13 +6,13 @@
 	objectVersion = 90;
 	objects = {
 
-/* Begin PBXFileReference section */
-		000000000000000000000120 /* AdvancedStudio3.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AdvancedStudio3.app; sourceTree = BUILT_PRODUCTS_DIR; };
-/* End PBXFileReference section */
-
 /* Begin PBXBuildFile section */
 		000000000000000150000000 /* RealityKitContent in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000170000000 /* RealityKitContent */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		000000000000000000000120 /* AdvancedStudio3.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AdvancedStudio3.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		000000000000000000000010 /* AdvancedStudio3 */ = {
@@ -96,13 +96,13 @@
 			);
 			mainGroup = 000000000000000000000001;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				000000000000000160000000 /* XCLocalSwiftPackageReference "RealityKitContent" */,
+			);
 			preferredProjectObjectVersion = 90;
 			productRefGroup = 000000000000000000000020 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
-			packageReferences = (
-				000000000000000160000000 /* XCLocalSwiftPackageReference "RealityKitContent" */,
-			);
 			targets = (
 				000000000000000100000000 /* AdvancedStudio3 */,
 			);
@@ -338,21 +338,6 @@
 		};
 /* End XCBuildConfiguration section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		000000000000000160000000 /* XCLocalSwiftPackageReference "RealityKitContent" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = RealityKitContent;
-		};
-/* End XCLocalSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		000000000000000170000000 /* RealityKitContent */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 000000000000000160000000 /* XCLocalSwiftPackageReference "RealityKitContent" */;
-			productName = RealityKitContent;
-		};
-/* End XCSwiftPackageProductDependency section */
-
 /* Begin XCConfigurationList section */
 		000000000000000010000000 /* Build configuration list for PBXProject "AdvancedStudio3" */ = {
 			isa = XCConfigurationList;
@@ -371,6 +356,21 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		000000000000000160000000 /* XCLocalSwiftPackageReference "RealityKitContent" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = RealityKitContent;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		000000000000000170000000 /* RealityKitContent */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 000000000000000160000000 /* XCLocalSwiftPackageReference "RealityKitContent" */;
+			productName = RealityKitContent;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 000000000000000000000000 /* Project object */;
 }

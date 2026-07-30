@@ -1,0 +1,15 @@
+#usda 1.0
+(
+    defaultPrim = "OpticalCorridor"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+def Xform "OpticalCorridor" {
+    def Xform "WorldRoot" {}
+    def Xform "PlasterBlock" {}
+    def Xform "PrismRoot" {}
+    def Xform "ProductSliceRoot" {}
+    def Xform "CopyRoot" {}
+    def Xform "CameraBezierRig" {}
+    def Xform "StripLightRoot" {}
+}

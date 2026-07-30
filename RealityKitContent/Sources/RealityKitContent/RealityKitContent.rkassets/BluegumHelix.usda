@@ -1,0 +1,17 @@
+#usda 1.0
+(
+    defaultPrim = "BluegumHelix"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+def Xform "BluegumHelix" {
+    def Xform "NurseryWorld" {}
+    def Xform "SoilIsland" {}
+    def Xform "HelixStem" {}
+    def Xform "BranchletRoot" {}
+    def Xform "ReflectorLeafRoot" {}
+    def Xform "SilhouetteProductSlot" {}
+    def Xform "BotanicalTagRoot" {}
+    def Xform "VerticalPedestalRig" {}
+    def Xform "MovingSkylightRig" {}
+}

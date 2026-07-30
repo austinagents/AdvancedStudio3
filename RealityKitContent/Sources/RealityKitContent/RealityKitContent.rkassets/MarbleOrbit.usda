@@ -1,0 +1,15 @@
+#usda 1.0
+(
+    defaultPrim = "MarbleOrbit"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def Xform "MarbleOrbit" {
+    def Xform "VoidShell" {}
+    def Xform "OrbitRoot" {}
+    def Xform "ProductSlot" {}
+    def Xform "DiagonalCopyRoot" {}
+    def Xform "RollCameraRig" {}
+    def Xform "KnifeLightRig" {}
+}

@@ -1,0 +1,15 @@
+#usda 1.0
+(
+    defaultPrim = "OxideLightCut"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+def Xform "OxideLightCut" {
+    def Xform "NightWorld" {}
+    def Xform "RustMonolith" {}
+    def Xform "LightPlaneRoot" {}
+    def Xform "ProductIntersectionSlot" {}
+    def Xform "ShadowCopyRoot" {}
+    def Xform "LockedMacroCamera" {}
+    def Xform "SilhouetteLightRig" {}
+}
