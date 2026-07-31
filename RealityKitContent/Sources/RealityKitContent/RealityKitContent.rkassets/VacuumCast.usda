@@ -1,0 +1,14 @@
+#usda 1.0
+(
+    defaultPrim = "VacuumCast"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+def Xform "VacuumCast" {
+    def Xform "CycloramaRoot" {}
+    def Xform "MembraneRoot" {}
+    def Xform "ProductRoot" {}
+    def Xform "TypographyRoot" {}
+    def Xform "CameraRig" {}
+    def Xform "LightRoot" {}
+}

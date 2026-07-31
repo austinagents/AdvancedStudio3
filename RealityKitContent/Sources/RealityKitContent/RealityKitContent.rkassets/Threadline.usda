@@ -1,0 +1,15 @@
+#usda 1.0
+(
+    defaultPrim = "Threadline"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+def Xform "Threadline" {
+    def Xform "MachinedStage" {}
+    def Xform "ThreadedShellRoot" {}
+    def Xform "InnerCapRoot" {}
+    def Xform "ProductRoot" {}
+    def Xform "CopyRoot" {}
+    def Xform "ThreadFollowerCamera" {}
+    def Xform "GrazingLightRig" {}
+}

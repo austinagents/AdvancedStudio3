@@ -1,0 +1,15 @@
+#usda 1.0
+(
+    defaultPrim = "MoireEngine"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+def Xform "MoireEngine" {
+    def Xform "WhiteStage" {}
+    def Xform "HorizontalScreen" {}
+    def Xform "VerticalScreen" {}
+    def Xform "ProductLift" {}
+    def Xform "CopyRoot" {}
+    def Xform "CraneCamera" {}
+    def Xform "SoftboxRig" {}
+}

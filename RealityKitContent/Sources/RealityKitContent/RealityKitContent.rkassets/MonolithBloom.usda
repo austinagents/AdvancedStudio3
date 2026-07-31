@@ -1,0 +1,14 @@
+#usda 1.0
+(
+    defaultPrim = "MonolithBloom"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+def Xform "MonolithBloom" {
+    def Xform "WorldRoot" {}
+    def Xform "PetalRoot" {}
+    def Xform "ProductRoot" {}
+    def Xform "CopyRoot" {}
+    def Xform "CameraRig" {}
+    def Xform "LightRoot" {}
+}

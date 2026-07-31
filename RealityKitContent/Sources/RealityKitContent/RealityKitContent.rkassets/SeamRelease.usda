@@ -1,0 +1,16 @@
+#usda 1.0
+(
+    defaultPrim = "SeamRelease"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+def Xform "SeamRelease" {
+    def Xform "TechnicalChamber" {}
+    def Xform "LeftPanelRoot" {}
+    def Xform "RightPanelRoot" {}
+    def Xform "ZipperRoot" {}
+    def Xform "ProductRoot" {}
+    def Xform "CopyRoot" {}
+    def Xform "SliderCameraRig" {}
+    def Xform "LinearLightRig" {}
+}

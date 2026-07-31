@@ -1,0 +1,15 @@
+#usda 1.0
+(
+    defaultPrim = "ContactSheet"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+def Xform "ContactSheet" {
+    def Xform "PhotoStageRoot" {}
+    def Xform "FilmTransportRoot" {}
+    def Xform "TakeUpRoot" {}
+    def Xform "ProductRoot" {}
+    def Xform "CaptionRoot" {}
+    def Xform "TrackingCameraRig" {}
+    def Xform "ProjectorLightRig" {}
+}

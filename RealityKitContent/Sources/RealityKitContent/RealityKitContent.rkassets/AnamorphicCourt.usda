@@ -1,0 +1,14 @@
+#usda 1.0
+(
+    defaultPrim = "AnamorphicCourt"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+def Xform "AnamorphicCourt" {
+    def Xform "CourtyardRoot" {}
+    def Xform "ColumnFieldRoot" {}
+    def Xform "ProductRoot" {}
+    def Xform "BrandRoot" {}
+    def Xform "CameraRail" {}
+    def Xform "SunRig" {}
+}

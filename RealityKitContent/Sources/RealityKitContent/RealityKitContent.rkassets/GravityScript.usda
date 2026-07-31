@@ -1,0 +1,14 @@
+#usda 1.0
+(
+    defaultPrim = "GravityScript"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+def Xform "GravityScript" {
+    def Xform "WorldRoot" {}
+    def Xform "GlyphRoot" {}
+    def Xform "ProductRoot" {}
+    def Xform "CopyRoot" {}
+    def Xform "CameraRig" {}
+    def Xform "LightRoot" {}
+}

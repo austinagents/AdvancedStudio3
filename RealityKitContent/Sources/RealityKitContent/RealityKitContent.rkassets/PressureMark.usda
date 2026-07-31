@@ -1,0 +1,15 @@
+#usda 1.0
+(
+    defaultPrim = "PressureMark"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+def Xform "PressureMark" {
+    def Xform "InkLabRoot" {}
+    def Xform "DiePressRoot" {}
+    def Xform "ImpressionRoot" {}
+    def Xform "ProductRoot" {}
+    def Xform "LabelRoot" {}
+    def Xform "UnderDieCamera" {}
+    def Xform "IndustrialLightRig" {}
+}

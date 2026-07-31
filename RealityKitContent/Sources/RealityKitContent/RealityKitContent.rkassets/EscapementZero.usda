@@ -1,0 +1,15 @@
+#usda 1.0
+(
+    defaultPrim = "EscapementZero"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+def Xform "EscapementZero" {
+    def Xform "HorologyVault" {}
+    def Xform "GearTrainRoot" {}
+    def Xform "EscapementRoot" {}
+    def Xform "ProductRoot" {}
+    def Xform "MarkRoot" {}
+    def Xform "ProbeCameraRig" {}
+    def Xform "JewelLightRig" {}
+}

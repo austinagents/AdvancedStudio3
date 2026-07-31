@@ -86,6 +86,15 @@ enum NewSceneSupport {
         }
     }
 
+    static func receiveIBL(in root: Entity, light: Entity) {
+        if let model = root as? ModelEntity {
+            model.components.set(ImageBasedLightReceiverComponent(imageBasedLight: light))
+        }
+        for child in root.children {
+            receiveIBL(in: child, light: light)
+        }
+    }
+
     static func product(
         imageURL: URL,
         height: Float,
