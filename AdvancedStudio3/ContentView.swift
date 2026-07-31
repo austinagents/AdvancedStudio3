@@ -346,7 +346,7 @@ struct ContentView: View {
                         templateCard(template)
                     }
 
-                    Text("Premium 07–10 are visible for review and remain incomplete.")
+                    Text("Premium 07–10 are valid refinement candidates, not production-ready.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)

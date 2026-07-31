@@ -75,33 +75,15 @@ final class TimberVaultScene {
         for pair in 0..<6 {
             let pairRoot = Entity(); pairRoot.name = "RibPair\(pair + 1)"
             let z = 3.8 - Float(pair) * 2.25
-            for side: Float in [-1, 1] {
-                for segment in 0..<13 {
-                    let t = Float(segment) / 12
-                    let x = side * (4.1 * (1 - t))
-                    let y = -3.7 + sin(t * .pi / 2) * 7.8
-                    let beam = ModelEntity(
-                        mesh: .generateBox(
-                            width: 0.34 + Float(segment % 3) * 0.025,
-                            height: 0.62,
-                            depth: 0.58,
-                            cornerRadius: 0.055
-                        ),
-                        materials: [wood]
-                    )
-                    beam.position = [x, y, z]; beam.orientation = simd_quatf(angle: side * t * 1.1, axis: [0, 0, 1])
-                    pairRoot.addChild(beam)
-                    if segment == 0 || segment == 6 || segment == 12 {
-                        let joint = ModelEntity(
-                            mesh: .generateBox(width: 0.43, height: 0.1, depth: 0.68, cornerRadius: 0.025),
-                            materials: [bronze]
-                        )
-                        joint.position = beam.position
-                        joint.orientation = beam.orientation
-                        pairRoot.addChild(joint)
-                    }
-                }
-            }
+            let rib = ModelEntity(mesh: try vaultRibMesh(pairIndex: pair), materials: [wood])
+            rib.position.z = z
+            pairRoot.addChild(rib)
+            let keystone = ModelEntity(
+                mesh: .generateBox(width: 0.48, height: 0.68, depth: 0.72, cornerRadius: 0.055),
+                materials: [bronze]
+            )
+            keystone.position = [0, 4.08, z]
+            pairRoot.addChild(keystone)
             ribRoot.addChild(pairRoot); ribs.append(pairRoot)
         }
         var hatchPanels: [ModelEntity] = []
@@ -110,7 +92,7 @@ final class TimberVaultScene {
             panel.position = [index % 2 == 0 ? -0.46 : 0.46, -3.72, index < 2 ? -4.46 : -3.54]
             hatchRoot.addChild(panel); hatchPanels.append(panel)
         }
-        let product = try await NewSceneSupport.product(imageURL: imageURL, height: 4.2, name: "VaultProduct")
+        let product = try await NewSceneSupport.litProduct(imageURL: imageURL, height: 4.8, name: "VaultProduct", roughness: 0.30)
         product.position = [0, -4.9, -3.92]; elevator.addChild(product)
         var plaques: [ModelEntity] = []
         for (index, line) in ["BUILT TO FRAME", "FORM"].enumerated() {
@@ -126,7 +108,7 @@ final class TimberVaultScene {
         }
         let ibl = try await NewSceneSupport.imageLight(id: "church_museum", exponent: 0.7, parent: lights)
         NewSceneSupport.receiveIBL(
-            [floor, rearWall] + hatchPanels
+            [floor, rearWall, product] + hatchPanels
                 + axis.children.compactMap { $0 as? ModelEntity }
                 + ribs.flatMap { $0.children.compactMap { $0 as? ModelEntity } },
             light: ibl
@@ -151,11 +133,12 @@ final class TimberVaultScene {
         }
         let hatch = NewSceneSupport.smooth(frame, 248, 287)
         for (index, panel) in hatchPanels.enumerated() {
+            panel.isEnabled = frame < 320
             panel.position.x = (index % 2 == 0 ? -0.46 : 0.46) + (index % 2 == 0 ? -1 : 1) * hatch * 0.9
             panel.position.z = (index < 2 ? -4.46 : -3.54) + (index < 2 ? -1 : 1) * hatch * 0.9
         }
         product.isEnabled = frame >= 276
-        product.position.y = NewSceneSupport.mix(-4.9, -1.68, NewSceneSupport.smooth(frame, 276, 316))
+        product.position.y = NewSceneSupport.mix(-5.2, -1.72, NewSceneSupport.smooth(frame, 276, 316))
         for (index, plaque) in plaques.enumerated() {
             plaque.isEnabled = frame >= 318 + index * 8
             plaque.position.y = NewSceneSupport.mix(6.5 + Float(index) * 0.5, 2.15 - Float(index) * 0.52, NewSceneSupport.smooth(frame, 318 + index * 8, 334 + index * 8))
@@ -171,5 +154,45 @@ final class TimberVaultScene {
             ],
             relativeTo: root
         )
+    }
+
+    private static func vaultRibMesh(pairIndex: Int) throws -> MeshResource {
+        let segments = 32
+        let halfWidth: Float = 0.23 + Float(pairIndex % 2) * 0.025
+        let halfDepth: Float = 0.31
+        var positions: [SIMD3<Float>] = []
+        var textureCoordinates: [SIMD2<Float>] = []
+        var indices: [UInt32] = []
+        for segment in 0...segments {
+            let t = Float(segment) / Float(segments)
+            let angle = t * .pi
+            let radial = SIMD2<Float>(cos(angle), sin(angle))
+            let center = SIMD2<Float>(4.25 * cos(angle), -3.7 + 7.8 * sin(angle))
+            let inner = center - radial * halfWidth
+            let outer = center + radial * halfWidth
+            positions += [
+                [inner.x, inner.y, -halfDepth],
+                [inner.x, inner.y, halfDepth],
+                [outer.x, outer.y, -halfDepth],
+                [outer.x, outer.y, halfDepth]
+            ]
+            let u = t * 8
+            textureCoordinates += [[u, 0], [u, 0.35], [u, 0.65], [u, 1]]
+        }
+        for segment in 0..<segments {
+            let base = UInt32(segment * 4)
+            let next = base + 4
+            indices += [
+                base, next, base + 2, next, next + 2, base + 2,
+                base + 1, base + 3, next + 1, next + 1, base + 3, next + 3,
+                base, base + 1, next, next, base + 1, next + 1,
+                base + 2, next + 2, base + 3, next + 2, next + 3, base + 3
+            ]
+        }
+        var descriptor = MeshDescriptor(name: "ContinuousVaultRib\(pairIndex)")
+        descriptor.positions = .init(positions)
+        descriptor.textureCoordinates = .init(textureCoordinates)
+        descriptor.primitives = .triangles(indices)
+        return try MeshResource.generate(from: [descriptor])
     }
 }

@@ -40,7 +40,14 @@ enum StudioTemplate: String, CaseIterable, Identifiable, Sendable {
     static let archivedCases: [StudioTemplate] = []
 
     var id: String { rawValue }
-    var validity: TemplateValidity { self == .opticalMesh ? .valid : .incomplete }
+    var validity: TemplateValidity {
+        switch self {
+        case .opticalMesh, .canyonExposure, .timberVault, .bluegumHelix, .magneticConvergence:
+            .valid
+        default:
+            .incomplete
+        }
+    }
 
     var name: String {
         switch self {

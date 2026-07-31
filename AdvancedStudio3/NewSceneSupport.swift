@@ -107,6 +107,31 @@ enum NewSceneSupport {
         return entity
     }
 
+    static func litProduct(
+        imageURL: URL,
+        height: Float,
+        name: String,
+        roughness: Float = 0.34
+    ) async throws -> ModelEntity {
+        let texture = try await TextureResource(contentsOf: imageURL)
+        var material = PhysicallyBasedMaterial()
+        material.baseColor = .init(tint: .white, texture: .init(texture))
+        material.roughness = .init(floatLiteral: roughness)
+        material.metallic = .init(floatLiteral: 0.02)
+        material.blending = .transparent(opacity: .init(floatLiteral: 1))
+        material.opacityThreshold = 0.001
+        material.faceCulling = .none
+        let entity = ModelEntity(
+            mesh: .generatePlane(
+                width: height * imageAspectRatio(imageURL),
+                height: height
+            ),
+            materials: [material]
+        )
+        entity.name = name
+        return entity
+    }
+
     static func camera(focalLength: Float, name: String) -> PerspectiveCamera {
         let camera = PerspectiveCamera()
         camera.name = name
