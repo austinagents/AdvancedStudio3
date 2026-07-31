@@ -24,6 +24,20 @@ final class MagneticConvergenceScene {
         let cameraRig = try NewSceneSupport.child("OrbitCameraRig", in: root)
         let lights = try NewSceneSupport.child("PulseLightRoot", in: root)
         let metal = try await NewSceneSupport.surfaceMaterial(id: "metal_plate_02", metallic: true)
+        var chamberMaterial = PhysicallyBasedMaterial()
+        chamberMaterial.baseColor = .init(tint: NSColor(red: 0.018, green: 0.021, blue: 0.028, alpha: 1))
+        chamberMaterial.roughness = 0.4
+        chamberMaterial.metallic = 0.72
+        let chamber = ModelEntity(mesh: .generateCylinder(height: 0.4, radius: 5.8), materials: [chamberMaterial])
+        chamber.orientation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0])
+        chamber.position.z = -2.2
+        plateRoot.addChild(chamber)
+        let floor = ModelEntity(mesh: .generateBox(width: 13, height: 0.28, depth: 12, cornerRadius: 0.1), materials: [chamberMaterial])
+        floor.position = [0, -3.65, 0.8]
+        plateRoot.addChild(floor)
+        let pedestal = ModelEntity(mesh: .generateCylinder(height: 0.5, radius: 1.3), materials: [metal])
+        pedestal.position = [0, -2.95, 0.45]
+        plateRoot.addChild(pedestal)
         var plates: [ModelEntity] = [], origins: [SIMD3<Float>] = []
         for index in 0..<180 {
             let size: Float = index < 72 ? 0.16 : index < 126 ? 0.24 : index < 162 ? 0.34 : 0.48
@@ -33,17 +47,15 @@ final class MagneticConvergenceScene {
             let origin = SIMD3<Float>(cos(phase) * (5.8 + path), sin(phase * 0.73) * 4.6, -1.8 + path * 1.8)
             plate.position = origin; plateRoot.addChild(plate); plates.append(plate); origins.append(origin)
         }
-        let product = try await NewSceneSupport.product(imageURL: imageURL, height: 2.4, name: "MagneticProduct")
+        let product = try await NewSceneSupport.product(imageURL: imageURL, height: 3.0, name: "MagneticProduct")
+        product.position = [0, -1.25, 0.8]
         productRoot.addChild(product)
-        var letters: [ModelEntity] = []
-        for (index, character) in Array("DRAWN TOGETHER").enumerated() {
-            guard character != " " else { continue }
-            let letter = NewSceneSupport.text(String(character), fontName: "DINCondensed-Bold", size: 0.25, color: .white)
-            letter.position = [2.5 - Float(index) * 0.38, -3.4 + sin(Float(index) * 1.7), 0.6]
-            copyRoot.addChild(letter); letters.append(letter)
-        }
+        let title = NewSceneSupport.text("DRAWN TOGETHER", fontName: "DINCondensed-Bold", size: 0.22, color: .white)
+        title.position = [-1.42, 2.05, 1.1]
+        copyRoot.addChild(title)
+        let letters = [title]
         let ibl = try await NewSceneSupport.imageLight(id: "aircraft_workshop_01", exponent: 1.0, parent: lights)
-        NewSceneSupport.receiveIBL(plates, light: ibl)
+        NewSceneSupport.receiveIBL([chamber, floor, pedestal] + plates, light: ibl)
         let redBack = SpotLight()
         redBack.light = .init(color: NSColor(red: 1, green: 0.06, blue: 0.03, alpha: 1), intensity: 12_000, innerAngleInDegrees: 28, outerAngleInDegrees: 62, attenuationRadius: 16)
         redBack.look(at: [0, 0, 0], from: [0, 1, -5], relativeTo: root)
@@ -61,6 +73,7 @@ final class MagneticConvergenceScene {
 
     func apply(frameIndex: Int) {
         let frame = min(max(frameIndex, 0), 359)
+        product.isEnabled = frame >= 276
         for index in plates.indices {
             let group = index / 60
             let attraction = NewSceneSupport.smooth(frame, 32 + group * 64 + (index % 60) / 4, 95 + group * 64)
@@ -78,13 +91,13 @@ final class MagneticConvergenceScene {
         }
         for (index, letter) in letters.enumerated() {
             let snap = NewSceneSupport.smooth(frame, 320 + index * 2, 324 + index * 2)
-            letter.position.y = NewSceneSupport.mix(-3.4 + sin(Float(index) * 1.7), -3.0, snap)
+            letter.position.y = NewSceneSupport.mix(2.65, 2.05, snap)
         }
         let orbit = NewSceneSupport.smooth(frame, 0, 319)
-        let angle = NewSceneSupport.mix(0, 162 * .pi / 180, orbit)
-        let radius = NewSceneSupport.mix(11.2, 8.6, orbit)
-        let cameraPosition = SIMD3<Float>(sin(angle) * radius, NewSceneSupport.mix(2.8, 0.4, orbit), cos(angle) * radius)
-        camera.look(at: [0, 0, 0], from: cameraPosition, relativeTo: root)
+        let angle = NewSceneSupport.mix(-22 * .pi / 180, 0, orbit)
+        let radius = NewSceneSupport.mix(12.2, 10.4, orbit)
+        let cameraPosition = SIMD3<Float>(sin(angle) * radius, NewSceneSupport.mix(1.9, 0.1, orbit), cos(angle) * radius)
+        camera.look(at: [0, -0.25, 0], from: cameraPosition, relativeTo: root)
         let facing = atan2(cameraPosition.x, cameraPosition.z)
         product.orientation = simd_quatf(angle: facing, axis: [0, 1, 0])
         for letter in letters { letter.orientation = simd_quatf(angle: facing, axis: [0, 1, 0]) }

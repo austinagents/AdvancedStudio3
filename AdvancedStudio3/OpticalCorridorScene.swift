@@ -34,32 +34,62 @@ final class OpticalCorridorScene {
         let cameraRig = try NewSceneSupport.child("CameraBezierRig", in: root)
         let lightRoot = try NewSceneSupport.child("StripLightRoot", in: root)
 
-        let background = ModelEntity(
-            mesh: .generatePlane(width: 24, height: 30),
-            materials: [UnlitMaterial(color: .black)]
-        )
-        background.position = [0, 2, -5]
-        world.addChild(background)
-
         let plaster = try await NewSceneSupport.surfaceMaterial(id: "white_plaster_02")
+        var graphite = PhysicallyBasedMaterial()
+        graphite.baseColor = .init(tint: NSColor(red: 0.018, green: 0.026, blue: 0.042, alpha: 1))
+        graphite.roughness = 0.34
+        graphite.metallic = 0.5
+        let rearWall = ModelEntity(
+            mesh: .generateBox(width: 15, height: 12, depth: 0.3, cornerRadius: 0.08),
+            materials: [graphite]
+        )
+        rearWall.position = [0, 2.8, -5.6]
+        world.addChild(rearWall)
+        for side: Float in [-1, 1] {
+            let wall = ModelEntity(
+                mesh: .generateBox(width: 0.28, height: 11.5, depth: 15, cornerRadius: 0.05),
+                materials: [graphite]
+            )
+            wall.position = [side * 6.6, 2.5, 1.2]
+            world.addChild(wall)
+            for index in 0..<4 {
+                let practical = ModelEntity(
+                    mesh: .generateBox(width: 0.055, height: 6.2, depth: 0.055, cornerRadius: 0.02),
+                    materials: [UnlitMaterial(color: index.isMultiple(of: 2) ? .cyan : .orange)]
+                )
+                practical.position = [side * 6.42, 1.8, -3.7 + Float(index) * 2.45]
+                practical.orientation = simd_quatf(angle: side * 0.18, axis: [0, 0, 1])
+                world.addChild(practical)
+            }
+        }
         let block = ModelEntity(
-            mesh: .generateBox(width: 8, height: 0.32, depth: 10),
+            mesh: .generateBox(width: 11.6, height: 0.34, depth: 15, cornerRadius: 0.08),
             materials: [plaster]
         )
-        block.position = [0, -2.15, 0]
+        block.position = [0, -2.3, 0.8]
         blockRoot.addChild(block)
+        var pedestalMaterial = PhysicallyBasedMaterial()
+        pedestalMaterial.baseColor = .init(tint: NSColor(red: 0.055, green: 0.075, blue: 0.11, alpha: 1))
+        pedestalMaterial.roughness = 0.18
+        pedestalMaterial.metallic = 0.72
+        let pedestal = ModelEntity(
+            mesh: .generateCylinder(height: 0.48, radius: 1.18),
+            materials: [pedestalMaterial]
+        )
+        pedestal.position = [0.42, -2.0, 0.0]
+        blockRoot.addChild(pedestal)
 
         var glass = PhysicallyBasedMaterial()
-        glass.baseColor = .init(tint: NSColor(red: 0.82, green: 0.95, blue: 1, alpha: 0.07))
-        glass.roughness = 0.055
+        glass.baseColor = .init(tint: NSColor(red: 0.68, green: 0.9, blue: 1, alpha: 0.28))
+        glass.roughness = 0.035
         glass.metallic = .init(floatLiteral: 0)
-        glass.blending = .transparent(opacity: .init(floatLiteral: 0.07))
-        let radii: [Float] = [1.05, 0.82, 0.62]
+        glass.blending = .transparent(opacity: .init(floatLiteral: 0.28))
+        let radii: [Float] = [0.68, 0.54, 0.42]
         let starts: [SIMD3<Float>] = [[-2.8, 0.7, 1.2], [2.4, -0.2, 0], [-1.9, -0.9, -1.4]]
         var prisms: [ModelEntity] = []
         for (radius, position) in zip(radii, starts) {
             let entity = ModelEntity(
-                mesh: try triangularPrismMesh(radius: radius, length: 5.8),
+                mesh: try triangularPrismMesh(radius: radius, length: 3.8),
                 materials: [glass]
             )
             entity.position = position
@@ -71,18 +101,18 @@ final class OpticalCorridorScene {
         var slices: [ModelEntity] = []
         for index in 0..<3 {
             let product = try await productSlice(imageURL: imageURL, index: index, height: 2.1)
-            product.position = [Float(index - 1) * 2.4, -0.18, 0.15]
+            product.position = [Float(index - 1) * 2.4, -0.68, 0.15]
             sliceRoot.addChild(product)
             slices.append(product)
         }
 
         let copy = NewSceneSupport.text(
-            "REFRACT\nREVEAL",
+            "REFRACT / REVEAL",
             fontName: "Futura-Medium",
-            size: 0.32,
-            color: .cyan
+            size: 0.18,
+            color: NSColor(red: 0.68, green: 0.94, blue: 1, alpha: 1)
         )
-        copy.position = [-1.2, -1.85, 0.5]
+        copy.position = [-0.48, 1.08, 1.2]
         copyRoot.addChild(copy)
 
         let ibl = try await NewSceneSupport.imageLight(
@@ -90,7 +120,10 @@ final class OpticalCorridorScene {
             exponent: 0.35,
             parent: lightRoot
         )
-        NewSceneSupport.receiveIBL([block] + prisms, light: ibl)
+        NewSceneSupport.receiveIBL(
+            [rearWall, block, pedestal] + world.children.compactMap { $0 as? ModelEntity } + prisms,
+            light: ibl
+        )
         let colors: [NSColor] = [
             NSColor(red: 0.28, green: 0.76, blue: 1, alpha: 1),
             NSColor(red: 1, green: 0.18, blue: 0.12, alpha: 1),
@@ -134,15 +167,15 @@ final class OpticalCorridorScene {
             )
             productSlices[index].position = NewSceneSupport.mix(
                 [Float(index - 1) * 2.4, -0.18, 0.15],
-                [0.72, -0.18, 0.15 + Float(index - 1) * 0.004],
+                [0.42, -0.68, 0.15 + Float(index - 1) * 0.004],
                 alignment
             )
             productSlices[index].isEnabled = frame >= 252
         }
         let cameraProgress = NewSceneSupport.smooth(frame, 248, 307)
         camera.look(
-            at: NewSceneSupport.mix([0, 0.1, 0], [0.72, -0.05, 0], cameraProgress),
-            from: NewSceneSupport.mix([-5.2, 0.4, 11.8], [3.1, 0.15, 9.6], cameraProgress),
+            at: NewSceneSupport.mix([0, 0.1, 0], [0.38, -0.22, 0], cameraProgress),
+            from: NewSceneSupport.mix([-4.6, 0.75, 12.8], [2.35, 0.35, 10.8], cameraProgress),
             relativeTo: root
         )
         copy.isEnabled = frame >= 308

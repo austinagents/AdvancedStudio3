@@ -30,8 +30,15 @@ final class BluegumHelixScene {
         let cameraRig = try NewSceneSupport.child("VerticalPedestalRig", in: root)
         let lights = try NewSceneSupport.child("MovingSkylightRig", in: root)
         let bark = try await NewSceneSupport.surfaceMaterial(id: "bark_bluegum")
-        let soil = ModelEntity(mesh: .generateCylinder(height: 0.45, radius: 3.1), materials: [SimpleMaterial(color: NSColor(red: 0.08, green: 0.055, blue: 0.035, alpha: 1), roughness: 1, isMetallic: false)])
-        soil.position.y = -4.1; soilRoot.addChild(soil)
+        var nurseryMaterial = PhysicallyBasedMaterial()
+        nurseryMaterial.baseColor = .init(tint: NSColor(red: 0.025, green: 0.075, blue: 0.06, alpha: 1))
+        nurseryMaterial.roughness = 0.78
+        let backdrop = ModelEntity(mesh: .generateBox(width: 13, height: 13, depth: 0.3, cornerRadius: 0.16), materials: [nurseryMaterial])
+        backdrop.position = [0, 0.5, -3.8]; soilRoot.addChild(backdrop)
+        let floor = ModelEntity(mesh: .generateBox(width: 13, height: 0.28, depth: 12, cornerRadius: 0.12), materials: [nurseryMaterial])
+        floor.position = [0, -4.35, 0.5]; soilRoot.addChild(floor)
+        let soil = ModelEntity(mesh: .generateCylinder(height: 0.55, radius: 3.1), materials: [SimpleMaterial(color: NSColor(red: 0.08, green: 0.055, blue: 0.035, alpha: 1), roughness: 1, isMetallic: false)])
+        soil.position.y = -4.0; soilRoot.addChild(soil)
         var stems: [ModelEntity] = []
         for index in 0..<96 {
             let t = Float(index) / 95
@@ -56,21 +63,29 @@ final class BluegumHelixScene {
             let base = SIMD3<Float>(cos(angle) * 1.25, -3.75 + t * 8.4, -1.05 + sin(angle) * 0.25)
             let branch = ModelEntity(mesh: .generateCylinder(height: 0.68, radius: 0.025), materials: [bark])
             branch.position = base; branch.orientation = simd_quatf(angle: .pi / 2, axis: [0, 0, 1]); branchRoot.addChild(branch); branches.append(branch)
-            let leaf = ModelEntity(mesh: .generateSphere(radius: 0.18 + Float(index % 5) * 0.035), materials: [leafMaterial])
-            leaf.scale = [1.5, 0.12, 0.72]; leaf.position = base + SIMD3<Float>(cos(angle) * 0.8, 0, -0.15)
+            let leaf = ModelEntity(mesh: try leafMesh(index: index), materials: [leafMaterial])
+            leaf.scale = [1.0, 1.0, 1.0]; leaf.position = base + SIMD3<Float>(cos(angle) * 0.8, 0, -0.15)
+            leaf.orientation = simd_quatf(angle: angle + Float(index % 3) * 0.18, axis: [0, 1, 0])
             leafRoot.addChild(leaf); leaves.append(leaf)
             if index.isMultiple(of: 5) {
                 let tag = NewSceneSupport.text(["grown", "toward", "light", "naturally"][tags.count], fontName: "AvenirNext-UltraLight", size: 0.16, color: NSColor(white: 0.92, alpha: 0.9))
-                tag.position = leaf.position + [0.15, -0.15, 0.2]; tagRoot.addChild(tag); tags.append(tag)
+                tag.position = [-1.8 + Float(tags.count % 2) * 2.7, 2.7 - Float(tags.count / 2) * 0.48, 0.8]
+                tagRoot.addChild(tag); tags.append(tag)
             }
         }
-        let product = try await NewSceneSupport.product(imageURL: imageURL, height: 2.0, name: "BotanicalProduct")
-        product.position = [0, -1.85, 0.2]; productRoot.addChild(product)
-        let ibl = try await NewSceneSupport.imageLight(id: "cloudy_netted_nursery", exponent: 0.55, parent: lights)
-        NewSceneSupport.receiveIBL([soil] + stems + branches + leaves, light: ibl)
-        let skylight = SpotLight(); skylight.light = .init(color: NSColor(red: 1, green: 0.7, blue: 0.35, alpha: 1), intensity: 17_000, innerAngleInDegrees: 28, outerAngleInDegrees: 60, attenuationRadius: 16)
+        let pedestal = ModelEntity(mesh: .generateCylinder(height: 0.48, radius: 1.18), materials: [nurseryMaterial])
+        pedestal.position = [0, -3.72, 0.65]; productRoot.addChild(pedestal)
+        let product = try await NewSceneSupport.product(imageURL: imageURL, height: 2.55, name: "BotanicalProduct")
+        product.position = [0, -4.8, 0.85]; productRoot.addChild(product)
+        let ibl = try await NewSceneSupport.imageLight(id: "cloudy_netted_nursery", exponent: 1.25, parent: lights)
+        NewSceneSupport.receiveIBL([backdrop, floor, soil, pedestal] + stems + branches + leaves, light: ibl)
+        let skylight = SpotLight(); skylight.light = .init(color: NSColor(red: 1, green: 0.78, blue: 0.48, alpha: 1), intensity: 38_000, innerAngleInDegrees: 32, outerAngleInDegrees: 72, attenuationRadius: 20)
         lights.addChild(skylight)
-        let camera = NewSceneSupport.camera(focalLength: 85, name: "BotanicalPedestalCamera"); cameraRig.addChild(camera)
+        let fill = PointLight()
+        fill.light = .init(color: NSColor(red: 0.45, green: 0.82, blue: 0.62, alpha: 1), intensity: 18_000, attenuationRadius: 10)
+        fill.position = [-2.5, 0.5, 2.5]
+        lights.addChild(fill)
+        let camera = NewSceneSupport.camera(focalLength: 48, name: "BotanicalPedestalCamera"); cameraRig.addChild(camera)
         let scene = BluegumHelixScene(root: root, camera: camera, stemSegments: stems, continuousStem: continuousStem, branchlets: branches, leaves: leaves, product: product, tags: tags, skylight: skylight)
         scene.apply(frameIndex: 359); return scene
     }
@@ -82,16 +97,36 @@ final class BluegumHelixScene {
             let grow = NewSceneSupport.smooth(frame, 168 + index * 3, 181 + index * 3); branch.scale.y = grow
         }
         for (index, leaf) in leaves.enumerated() {
-            let unfold = NewSceneSupport.smooth(frame, 228 + index * 3, 240 + index * 3); leaf.scale = [1.5 * unfold, 0.12, 0.72 * unfold]
-            leaf.orientation = simd_quatf(angle: NewSceneSupport.mix(-1.2, 0.12, unfold), axis: [0, 1, 0])
+            let unfold = NewSceneSupport.smooth(frame, 228 + index * 3, 240 + index * 3)
+            leaf.scale = [unfold, unfold, unfold]
         }
         let lightTravel = NewSceneSupport.smooth(frame, 280, 319)
         skylight.look(at: [0, -0.3, 0], from: NewSceneSupport.mix([-4, 6, 1], [3, 7, -2], lightTravel), relativeTo: root)
-        product.isEnabled = frame >= 320
-        for (index, tag) in tags.enumerated() { tag.isEnabled = frame >= 292 + index * 9 }
-        let pedestal = NewSceneSupport.smooth(frame, 320, 359)
-        product.position.y = NewSceneSupport.mix(-1.85, 1.2, pedestal)
-        camera.look(at: [0.35, product.position.y, 0], from: [0.35, NewSceneSupport.mix(-2.2, 2.7, pedestal), 14.0], relativeTo: root)
+        product.isEnabled = frame >= 276
+        for (index, tag) in tags.enumerated() { tag.isEnabled = frame >= 318 + index * 6 }
+        let pedestal = NewSceneSupport.smooth(frame, 276, 322)
+        product.position.y = NewSceneSupport.mix(-4.8, -2.15, pedestal)
+        camera.look(
+            at: NewSceneSupport.mix([0, 0, -0.6], [0, -0.5, 0.2], pedestal),
+            from: NewSceneSupport.mix([-1.8, 0.6, 13.8], [1.1, 0.1, 11.2], pedestal),
+            relativeTo: root
+        )
+    }
+
+    private static func leafMesh(index: Int) throws -> MeshResource {
+        let length = 0.72 + Float(index % 4) * 0.08
+        let width = 0.25 + Float(index % 3) * 0.035
+        var descriptor = MeshDescriptor(name: "BluegumLeaf\(index)")
+        descriptor.positions = .init([
+            [0, 0, 0],
+            [width, 0.025, length * 0.45],
+            [0, 0.06, length],
+            [-width, -0.015, length * 0.45]
+        ])
+        descriptor.normals = .init(Array(repeating: SIMD3<Float>(0, 1, 0), count: 4))
+        descriptor.textureCoordinates = .init([[0.5, 0], [1, 0.45], [0.5, 1], [0, 0.45]])
+        descriptor.primitives = .triangles([0, 1, 2, 0, 2, 3])
+        return try MeshResource.generate(from: [descriptor])
     }
 
     private static func helixMesh(progress: Float) throws -> MeshResource {

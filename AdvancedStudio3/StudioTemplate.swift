@@ -30,7 +30,13 @@ enum StudioTemplate: String, CaseIterable, Identifiable, Sendable {
         .satinCurrent, .canyonExposure, .timberVault, .bluegumHelix,
         .magneticConvergence, .oxideLightCut
     ]
-    static let userFacingCases: [StudioTemplate] = [.opticalMesh] + candidateCases
+    static let userFacingCases: [StudioTemplate] = [
+        .opticalMesh,
+        .canyonExposure,
+        .timberVault,
+        .bluegumHelix,
+        .magneticConvergence
+    ]
     static let archivedCases: [StudioTemplate] = []
 
     var id: String { rawValue }

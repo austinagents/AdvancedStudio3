@@ -23,29 +23,43 @@ final class CanyonExposureScene {
         let lights = try NewSceneSupport.child("DesertSunRig", in: root)
         let cliff = try await NewSceneSupport.surfaceMaterial(id: "cliff_side")
         let sky = ModelEntity(
-            mesh: .generatePlane(width: 24, height: 30),
-            materials: [UnlitMaterial(color: NSColor(red: 0.12, green: 0.055, blue: 0.025, alpha: 1))]
+            mesh: .generateBox(width: 24, height: 30, depth: 0.2),
+            materials: [UnlitMaterial(color: NSColor(red: 0.18, green: 0.075, blue: 0.032, alpha: 1))]
         )
         sky.position = [0, 3, -5]
         world.addChild(sky)
 
-        let ground = ModelEntity(mesh: .generateBox(width: 18, height: 0.25, depth: 18), materials: [cliff])
-        ground.position = [0, -5.35, -1.5]; world.addChild(ground)
+        let ground = ModelEntity(mesh: .generateBox(width: 18, height: 0.35, depth: 20, cornerRadius: 0.12), materials: [cliff])
+        ground.position = [0, -4.35, -1.5]; world.addChild(ground)
+        let heroLedge = ModelEntity(mesh: .generateBox(width: 4.2, height: 0.55, depth: 3.4, cornerRadius: 0.18), materials: [cliff])
+        heroLedge.position = [0.4, -2.7, 0.2]; world.addChild(heroLedge)
         var strata: [ModelEntity] = []
-        for index in 0..<64 {
+        for index in 0..<36 {
+            let side: Float = index.isMultiple(of: 2) ? -1 : 1
+            let level = index / 2
             let layer = ModelEntity(
-                mesh: .generateBox(width: 8.5 - Float(index % 5) * 0.1, height: 0.17, depth: 3.2 - Float(index % 7) * 0.08, cornerRadius: 0.035),
+                mesh: .generateBox(
+                    width: 3.8 + Float(index % 4) * 0.22,
+                    height: 0.42 + Float(index % 3) * 0.05,
+                    depth: 5.5 - Float(index % 5) * 0.24,
+                    cornerRadius: 0.10
+                ),
                 materials: [cliff]
             )
-            layer.position = [sin(Float(index) * 1.91) * 0.22, -5.15 + Float(index) * 0.16, -0.4 + cos(Float(index) * 1.37) * 0.12]
+            layer.position = [
+                side * (3.2 + sin(Float(level) * 1.37) * 0.28),
+                -4.0 + Float(level) * 0.43,
+                -0.7 + cos(Float(level) * 1.11) * 0.35
+            ]
+            layer.orientation = simd_quatf(angle: side * (0.035 + Float(level % 4) * 0.012), axis: [0, 0, 1])
             strataRoot.addChild(layer); strata.append(layer)
         }
-        let product = try await NewSceneSupport.product(imageURL: imageURL, height: 2.35, name: "EmbeddedProduct")
-        product.position = [1.15, -1, 0.3]; productRoot.addChild(product)
-        let copy = NewSceneSupport.text("REVEALED BY TIME", fontName: "Optima-Regular", size: 0.27, color: NSColor(red: 0.42, green: 0.19, blue: 0.07, alpha: 1), depth: 0.012)
-        copy.position = [-2.6, -5.1, 2.8]; copy.orientation = simd_quatf(angle: -.pi / 2, axis: [1, 0, 0]); copyRoot.addChild(copy)
+        let product = try await NewSceneSupport.product(imageURL: imageURL, height: 3.0, name: "EmbeddedProduct")
+        product.position = [0.4, -0.95, 0.65]; productRoot.addChild(product)
+        let copy = NewSceneSupport.text("REVEALED BY TIME", fontName: "Optima-Regular", size: 0.22, color: NSColor(red: 0.96, green: 0.72, blue: 0.48, alpha: 1), depth: 0.012)
+        copy.position = [-1.18, 2.0, 0.8]; copyRoot.addChild(copy)
         let ibl = try await NewSceneSupport.imageLight(id: "goegap", exponent: 0.2, parent: lights)
-        NewSceneSupport.receiveIBL([ground] + strata, light: ibl)
+        NewSceneSupport.receiveIBL([ground, heroLedge] + strata, light: ibl)
         let sun = DirectionalLight(); sun.light = .init(color: NSColor(red: 1, green: 0.56, blue: 0.26, alpha: 1), intensity: 18_000)
         sun.look(at: [0, 0, 0], from: [-8, 2.5, 4], relativeTo: root); lights.addChild(sun)
         let camera = NewSceneSupport.camera(focalLength: 24, name: "CanyonCraneCamera"); cameraRig.addChild(camera)
@@ -56,17 +70,16 @@ final class CanyonExposureScene {
     func apply(frameIndex: Int) {
         let frame = min(max(frameIndex, 0), 359)
         for (index, layer) in strata.enumerated() {
-            let removalStart: Int
-            if index < 18 { removalStart = 72 + index }
-            else if index < 40 { removalStart = 140 + (index - 18) }
-            else { removalStart = 224 + (index - 40) * 2 }
+            let removalStart = 82 + (index / 2) * 8
             let erosion = NewSceneSupport.smooth(frame, removalStart, removalStart + 14)
-            layer.scale.x = NewSceneSupport.mix(1, 0.001, erosion)
-            layer.position.x = sin(Float(index) * 1.91) * 0.22 + erosion * (index.isMultiple(of: 2) ? -4.6 : 4.6)
+            let side: Float = index.isMultiple(of: 2) ? -1 : 1
+            let level = index / 2
+            let baseX = side * (3.2 + sin(Float(level) * 1.37) * 0.28)
+            layer.position.x = baseX + side * erosion * 0.85
         }
         product.isEnabled = frame >= 252
-        let crane = NewSceneSupport.smooth(frame, 0, 339)
-        camera.look(at: NewSceneSupport.mix([1.15, -1.1, 0], [0.35, 0.2, 0], crane), from: NewSceneSupport.mix([0.4, -3.1, 6.2], [0.4, 4.8, 13.5], crane), relativeTo: root)
-        copy.isEnabled = frame >= 340
+        let crane = NewSceneSupport.smooth(frame, 0, 315)
+        camera.look(at: NewSceneSupport.mix([0.4, -1.1, 0], [0.4, -0.35, 0.2], crane), from: NewSceneSupport.mix([-1.4, -1.2, 8.2], [1.2, 1.5, 12.0], crane), relativeTo: root)
+        copy.isEnabled = frame >= 320
     }
 }

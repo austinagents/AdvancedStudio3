@@ -30,37 +30,56 @@ final class CeramicImpactScene {
 
         let tile = try await NewSceneSupport.surfaceMaterial(id: "long_white_tiles")
         var fragments: [ModelEntity] = []
-        var seed: UInt64 = 0xC3A51C
-        func random() -> Float {
-            seed = seed &* 6_364_136_223_846_793_005 &+ 1
-            return Float((seed >> 40) & 0xFFFFFF) / Float(0xFFFFFF)
-        }
         for index in 0..<43 {
-            let width = 0.62 + random() * 0.72
-            let height = 0.58 + random() * 0.9
-            let piece = ModelEntity(mesh: .generateBox(width: width, height: height, depth: 0.08 + random() * 0.08, cornerRadius: 0.025), materials: [tile])
+            let row = index / 7
+            let column = index % 7
+            let width = 0.94 + Float((row + column) % 3) * 0.035
+            let height = 1.12 + Float((row * 2 + column) % 3) * 0.045
+            let piece = ModelEntity(
+                mesh: .generateBox(width: width, height: height, depth: 0.18, cornerRadius: 0.045),
+                materials: [tile]
+            )
             piece.name = "CeramicFragment\(index)"
-            piece.position = [-3.2 + random() * 6.4, -5.1 + random() * 10.2, random() * 0.08]
+            piece.position = [
+                (Float(column) - 3) * 1.02,
+                (Float(row) - 3) * 1.2,
+                Float((row + column) % 2) * 0.025
+            ]
             fragmentRoot.addChild(piece)
             fragments.append(piece)
         }
+        var wallMaterial = PhysicallyBasedMaterial()
+        wallMaterial.baseColor = .init(tint: NSColor(red: 0.075, green: 0.032, blue: 0.024, alpha: 1))
+        wallMaterial.roughness = 0.82
+        let wall = ModelEntity(
+            mesh: .generateBox(width: 9.5, height: 11.5, depth: 0.42, cornerRadius: 0.08),
+            materials: [wallMaterial]
+        )
+        wall.position = [0, 0, -0.42]
+        facade.addChild(wall)
         let cavity = ModelEntity(
-            mesh: .generateBox(width: 4.4, height: 6.2, depth: 0.16, cornerRadius: 0.18),
+            mesh: .generateBox(width: 3.5, height: 5.0, depth: 0.3, cornerRadius: 0.28),
             materials: [UnlitMaterial(color: NSColor(red: 0.12, green: 0.035, blue: 0.02, alpha: 1))]
         )
-        cavity.position = [-0.68, -0.35, -0.7]
+        cavity.position = [0, -0.15, 0.08]
         facade.addChild(cavity)
+        let ledge = ModelEntity(
+            mesh: .generateBox(width: 3.2, height: 0.34, depth: 1.5, cornerRadius: 0.09),
+            materials: [wallMaterial]
+        )
+        ledge.position = [0, -2.38, 0.45]
+        facade.addChild(ledge)
 
-        let product = try await NewSceneSupport.product(imageURL: imageURL, height: 2.45, name: "FixedProduct")
-        product.position = [-0.68, -0.35, -0.35]
+        let product = try await NewSceneSupport.product(imageURL: imageURL, height: 3.15, name: "FixedProduct")
+        product.position = [0, -0.72, 0.72]
         productSlot.addChild(product)
 
-        let copy = NewSceneSupport.text("BREAK THROUGH", fontName: "AvenirNextCondensed-Heavy", size: 0.52, color: .white, depth: 0.008)
-        copy.position = [-3.35, -4.65, 0.6]
+        let copy = NewSceneSupport.text("BREAK THROUGH", fontName: "AvenirNextCondensed-Medium", size: 0.30, color: .white, depth: 0.008)
+        copy.position = [-1.18, 2.75, 0.72]
         copyRoot.addChild(copy)
 
         let ibl = try await NewSceneSupport.imageLight(id: "courtyard", exponent: 0.15, parent: lightRig)
-        NewSceneSupport.receiveIBL(fragments, light: ibl)
+        NewSceneSupport.receiveIBL([wall, cavity, ledge] + fragments, light: ibl)
         let sun = DirectionalLight()
         sun.light = .init(color: NSColor(red: 1, green: 0.72, blue: 0.48, alpha: 1), intensity: 14_000)
         sun.look(at: [0, 0, 0], from: [-5, 7, 6], relativeTo: root)
@@ -78,15 +97,20 @@ final class CeramicImpactScene {
         let impact = NewSceneSupport.smooth(frame, 103, 219)
         for (index, fragment) in fragments.enumerated() {
             let phase = Float(index) * 2.399963
-            let direction = SIMD3<Float>(cos(phase), 0.35 + Float(index % 7) * 0.08, sin(phase) * 0.45 + 0.8)
-            fragment.position = fragmentOrigins[index] + direction * (impact * impact) * (4.2 + Float(index % 5) * 0.8)
-            fragment.scale = .init(repeating: NewSceneSupport.mix(1, 0.72, impact))
+            let origin = fragmentOrigins[index]
+            let radial = simd_normalize(SIMD3<Float>(origin.x, origin.y + 0.15, 0.8))
+            let nearCenter = simd_length(SIMD2<Float>(origin.x, origin.y)) < 2.25
+            fragment.position = origin + radial * (impact * impact) * (nearCenter ? 4.8 : 0.55)
+            fragment.scale = .init(repeating: NewSceneSupport.mix(1, nearCenter ? 0.78 : 0.98, impact))
             fragment.orientation = simd_quatf(angle: impact * (0.4 + Float(index % 9) * 0.11), axis: simd_normalize([sin(phase), cos(phase), 0.7]))
+            if nearCenter {
+                fragment.isEnabled = frame < 292
+            }
         }
         product.isEnabled = frame >= 252
         copy.isEnabled = frame >= 278
         copy.position.y = NewSceneSupport.mix(-5.7, -4.65, NewSceneSupport.smooth(frame, 278, 307))
         let impulse = frame >= 103 && frame <= 124 ? sin(Float(frame - 103) * 0.9) * exp(-Float(frame - 103) * 0.18) * 0.11 : 0
-        camera.look(at: [-0.35, -0.15, 0], from: [0.45, -0.6, 10.6 - impulse], relativeTo: root)
+        camera.look(at: [0, -0.2, 0], from: [0.25, -0.2, 11.8 - impulse], relativeTo: root)
     }
 }

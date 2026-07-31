@@ -251,7 +251,11 @@ struct ContentView: View {
                     .frame(width: 250)
                 Divider().overlay(Color.white.opacity(0.08))
                 preview
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(
+                        maxWidth: .infinity,
+                        maxHeight: .infinity,
+                        alignment: .top
+                    )
                 Divider().overlay(Color.white.opacity(0.08))
                 controls
                     .frame(width: 290)
@@ -336,16 +340,20 @@ struct ContentView: View {
     private var templateLibrary: some View {
         VStack(alignment: .leading, spacing: 16) {
             panelTitle("TEMPLATE LIBRARY", subtitle: "Curated motion systems")
-            VStack(spacing: 14) {
-                ForEach(StudioTemplate.userFacingCases) { template in
-                    templateCard(template)
+            ScrollView(.vertical) {
+                LazyVStack(spacing: 14) {
+                    ForEach(StudioTemplate.userFacingCases) { template in
+                        templateCard(template)
+                    }
+
+                    Text("Premium 07–10 are visible for review and remain incomplete.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
-            Spacer()
-            Text("Premium 02–11 are visible for review and remain incomplete.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            .scrollIndicators(.visible)
         }
         .padding(20)
     }

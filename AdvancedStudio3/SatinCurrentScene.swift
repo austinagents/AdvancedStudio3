@@ -23,18 +23,32 @@ final class SatinCurrentScene {
         let cameraRig = try NewSceneSupport.child("LateralCameraRail", in: root)
         let lights = try NewSceneSupport.child("HorizontalStripRig", in: root)
 
-        let background = ModelEntity(mesh: .generatePlane(width: 22, height: 28), materials: [UnlitMaterial(color: NSColor(red: 0.13, green: 0.105, blue: 0.095, alpha: 1))])
-        background.position = [0, 1, -4]; world.addChild(background)
-        var satin = try await NewSceneSupport.surfaceMaterial(id: "crepe_satin")
+        var backgroundMaterial = PhysicallyBasedMaterial()
+        backgroundMaterial.baseColor = .init(tint: NSColor(red: 0.105, green: 0.045, blue: 0.055, alpha: 1))
+        backgroundMaterial.roughness = 0.72
+        let background = ModelEntity(mesh: .generateBox(width: 18, height: 14, depth: 0.3, cornerRadius: 0.12), materials: [backgroundMaterial])
+        background.position = [0, 1.3, -4]; world.addChild(background)
+        let floor = ModelEntity(mesh: .generateBox(width: 18, height: 0.25, depth: 13, cornerRadius: 0.08), materials: [backgroundMaterial])
+        floor.position = [0, -3.65, 1]; world.addChild(floor)
+        var satin = try await NewSceneSupport.surfaceMaterial(
+            id: "crepe_satin",
+            tint: NSColor(red: 0.72, green: 0.12, blue: 0.26, alpha: 1)
+        )
         satin.faceCulling = .none
         let ribbon = ModelEntity(mesh: try ribbonMesh(frame: 0), materials: [satin]); ribbonRoot.addChild(ribbon)
-        let product = try await NewSceneSupport.product(imageURL: imageURL, height: 2.4, name: "SatinProduct")
-        product.position = [-1.25, -0.35, 0]; productRoot.addChild(product)
-        let copy = NewSceneSupport.text("MOVE WITH FORM", fontName: "HelveticaNeue-Italic", size: 0.31, color: NSColor(calibratedRed: 0.96, green: 0.88, blue: 0.74, alpha: 1))
-        copy.position = [-5.5, -3.2, 0.7]; copyRoot.addChild(copy)
+        var plinthMaterial = PhysicallyBasedMaterial()
+        plinthMaterial.baseColor = .init(tint: NSColor(red: 0.22, green: 0.035, blue: 0.06, alpha: 1))
+        plinthMaterial.roughness = 0.25
+        plinthMaterial.metallic = 0.55
+        let plinth = ModelEntity(mesh: .generateCylinder(height: 0.46, radius: 1.28), materials: [plinthMaterial])
+        plinth.position = [0, -2.65, 0.25]; productRoot.addChild(plinth)
+        let product = try await NewSceneSupport.product(imageURL: imageURL, height: 2.65, name: "SatinProduct")
+        product.position = [0, -1.08, 0.5]; productRoot.addChild(product)
+        let copy = NewSceneSupport.text("MOVE WITH FORM", fontName: "HelveticaNeue-LightItalic", size: 0.18, color: NSColor(calibratedRed: 0.96, green: 0.88, blue: 0.74, alpha: 1))
+        copy.position = [-0.92, 1.65, 0.9]; copyRoot.addChild(copy)
 
         let ibl = try await NewSceneSupport.imageLight(id: "ferndale_studio_05", exponent: 0.4, parent: lights)
-        NewSceneSupport.receiveIBL([ribbon], light: ibl)
+        NewSceneSupport.receiveIBL([background, floor, plinth, ribbon], light: ibl)
         let strip = SpotLight()
         strip.light = .init(color: NSColor(red: 1, green: 0.16, blue: 0.58, alpha: 1), intensity: 12_000, innerAngleInDegrees: 12, outerAngleInDegrees: 38, attenuationRadius: 18)
         lights.addChild(strip)
@@ -50,25 +64,27 @@ final class SatinCurrentScene {
         ribbon.model?.mesh = (try? Self.ribbonMesh(frame: frame)) ?? ribbon.model!.mesh
         product.isEnabled = frame >= 252
         let travel = Float(frame) / 359
-        let cameraX = NewSceneSupport.mix(4.8, -3.6, travel)
-        product.position.x = cameraX - 1.25
-        camera.look(at: [cameraX - 1.2, 0.05, 0], from: [cameraX, 0.3, 10.4], relativeTo: root)
-        let copyTravel = NewSceneSupport.smooth(frame, 308, 343)
-        copy.position.x = cameraX - 1.2 + NewSceneSupport.mix(-1.4, 1.4, copyTravel)
+        let reveal = NewSceneSupport.smooth(frame, 252, 306)
+        camera.look(
+            at: [0, -0.2, 0],
+            from: [NewSceneSupport.mix(2.2, -0.6, reveal), 0.2, NewSceneSupport.mix(11.8, 10.2, reveal)],
+            relativeTo: root
+        )
+        copy.isEnabled = frame >= 312
         strip.look(at: [0, 0, 0], from: [NewSceneSupport.mix(-5, 5, travel), 2.8, 4], relativeTo: root)
     }
 
     private static func ribbonMesh(frame: Int) throws -> MeshResource {
         let columns = 96, rows = 12
         var positions: [SIMD3<Float>] = [], normals: [SIMD3<Float>] = [], uv: [SIMD2<Float>] = [], indices: [UInt32] = []
-        let travel = NewSceneSupport.mix(14, -14, Float(frame) / 359)
+        let travel = NewSceneSupport.mix(13, -13, Float(frame) / 359)
         for row in 0...rows {
             for column in 0...columns {
                 let u = Float(column) / Float(columns)
                 let v = Float(row) / Float(rows) - 0.5
                 let x = (u - 0.5) * 18 + travel
-                let wrap = exp(-pow(x + 1.25, 2) * 0.32) * sin(u * 5 * .pi + Float(frame) * 0.035)
-                positions.append([x, v * 2.2 + wrap * 0.75, 0.4 + wrap * 1.1 + v * 0.18])
+                let wrap = exp(-pow(x, 2) * 0.20) * sin(u * 4 * .pi + Float(frame) * 0.028)
+                positions.append([x, v * 1.55 + wrap * 0.52, 0.15 + wrap * 0.72 + v * 0.12])
                 normals.append([0, 0.25, 0.97]); uv.append([u * 18 / 0.48, Float(row) / Float(rows)])
             }
         }
