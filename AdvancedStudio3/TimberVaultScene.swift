@@ -62,6 +62,14 @@ final class TimberVaultScene {
         )
         rearWall.position = [0, 0.65, -12.8]
         axis.addChild(rearWall)
+        for index in 0..<6 {
+            let ceilingBay = ModelEntity(
+                mesh: .generateBox(width: 8.8, height: 0.24, depth: 1.45, cornerRadius: 0.06),
+                materials: [wood]
+            )
+            ceilingBay.position = [0, 4.55, 3.5 - Float(index) * 2.7]
+            axis.addChild(ceilingBay)
+        }
 
         var ribs: [Entity] = []
         for pair in 0..<6 {
@@ -102,18 +110,6 @@ final class TimberVaultScene {
             panel.position = [index % 2 == 0 ? -0.46 : 0.46, -3.72, index < 2 ? -4.46 : -3.54]
             hatchRoot.addChild(panel); hatchPanels.append(panel)
         }
-        let pedestal = ModelEntity(
-            mesh: .generateCylinder(height: 0.58, radius: 1.22),
-            materials: [bronze]
-        )
-        pedestal.position = [0, -3.5, -4]
-        elevator.addChild(pedestal)
-        let pedestalTop = ModelEntity(
-            mesh: .generateCylinder(height: 0.10, radius: 1.34),
-            materials: [stone]
-        )
-        pedestalTop.position = [0, -3.16, -4]
-        elevator.addChild(pedestalTop)
         let product = try await NewSceneSupport.product(imageURL: imageURL, height: 4.2, name: "VaultProduct")
         product.position = [0, -4.9, -3.92]; elevator.addChild(product)
         var plaques: [ModelEntity] = []
@@ -130,7 +126,7 @@ final class TimberVaultScene {
         }
         let ibl = try await NewSceneSupport.imageLight(id: "church_museum", exponent: 0.7, parent: lights)
         NewSceneSupport.receiveIBL(
-            [floor, rearWall, pedestal, pedestalTop] + hatchPanels
+            [floor, rearWall] + hatchPanels
                 + axis.children.compactMap { $0 as? ModelEntity }
                 + ribs.flatMap { $0.children.compactMap { $0 as? ModelEntity } },
             light: ibl
@@ -159,7 +155,7 @@ final class TimberVaultScene {
             panel.position.z = (index < 2 ? -4.46 : -3.54) + (index < 2 ? -1 : 1) * hatch * 0.9
         }
         product.isEnabled = frame >= 276
-        product.position.y = NewSceneSupport.mix(-4.9, -1.02, NewSceneSupport.smooth(frame, 276, 316))
+        product.position.y = NewSceneSupport.mix(-4.9, -1.68, NewSceneSupport.smooth(frame, 276, 316))
         for (index, plaque) in plaques.enumerated() {
             plaque.isEnabled = frame >= 318 + index * 8
             plaque.position.y = NewSceneSupport.mix(6.5 + Float(index) * 0.5, 2.15 - Float(index) * 0.52, NewSceneSupport.smooth(frame, 318 + index * 8, 334 + index * 8))

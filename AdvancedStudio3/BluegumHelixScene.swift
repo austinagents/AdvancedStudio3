@@ -30,15 +30,33 @@ final class BluegumHelixScene {
         let cameraRig = try NewSceneSupport.child("VerticalPedestalRig", in: root)
         let lights = try NewSceneSupport.child("MovingSkylightRig", in: root)
         let bark = try await NewSceneSupport.surfaceMaterial(id: "bark_bluegum")
-        var nurseryMaterial = PhysicallyBasedMaterial()
-        nurseryMaterial.baseColor = .init(tint: NSColor(red: 0.025, green: 0.075, blue: 0.06, alpha: 1))
-        nurseryMaterial.roughness = 0.78
-        let backdrop = ModelEntity(mesh: .generateBox(width: 13, height: 13, depth: 0.3, cornerRadius: 0.16), materials: [nurseryMaterial])
+        let nurseryWall = try await NewSceneSupport.surfaceMaterial(
+            id: "white_plaster_02",
+            tint: NSColor(red: 0.34, green: 0.46, blue: 0.38, alpha: 1)
+        )
+        let nurseryFloor = try await NewSceneSupport.surfaceMaterial(
+            id: "dark_rock_02",
+            tint: NSColor(red: 0.15, green: 0.17, blue: 0.13, alpha: 1)
+        )
+        let backdrop = ModelEntity(mesh: .generateBox(width: 13, height: 13, depth: 0.35, cornerRadius: 0.16), materials: [nurseryWall])
         backdrop.position = [0, 0.5, -3.8]; soilRoot.addChild(backdrop)
-        let floor = ModelEntity(mesh: .generateBox(width: 13, height: 0.28, depth: 12, cornerRadius: 0.12), materials: [nurseryMaterial])
+        let floor = ModelEntity(mesh: .generateBox(width: 13, height: 0.28, depth: 12, cornerRadius: 0.12), materials: [nurseryFloor])
         floor.position = [0, -4.35, 0.5]; soilRoot.addChild(floor)
-        let soil = ModelEntity(mesh: .generateCylinder(height: 0.55, radius: 3.1), materials: [SimpleMaterial(color: NSColor(red: 0.08, green: 0.055, blue: 0.035, alpha: 1), roughness: 1, isMetallic: false)])
-        soil.position.y = -4.0; soilRoot.addChild(soil)
+        for side: Float in [-1, 1] {
+            let sidePanel = ModelEntity(
+                mesh: .generateBox(width: 0.32, height: 10, depth: 11, cornerRadius: 0.08),
+                materials: [nurseryWall]
+            )
+            sidePanel.position = [side * 6.2, 0.2, 0.2]
+            soilRoot.addChild(sidePanel)
+        }
+        let soil = ModelEntity(
+            mesh: .generateBox(width: 5.8, height: 0.18, depth: 4.4, cornerRadius: 0.16),
+            materials: [nurseryFloor]
+        )
+        soil.position = [-0.35, -4.2, -0.2]
+        soil.orientation = simd_quatf(angle: -0.08, axis: [0, 1, 0])
+        soilRoot.addChild(soil)
         var stems: [ModelEntity] = []
         for index in 0..<96 {
             let t = Float(index) / 95
@@ -73,19 +91,41 @@ final class BluegumHelixScene {
                 tagRoot.addChild(tag); tags.append(tag)
             }
         }
-        let pedestal = ModelEntity(mesh: .generateCylinder(height: 0.48, radius: 1.18), materials: [nurseryMaterial])
-        pedestal.position = [0, -3.72, 0.65]; productRoot.addChild(pedestal)
+        for index in 0..<5 {
+            let root = ModelEntity(
+                mesh: .generateBox(
+                    width: 0.95 + Float(index % 2) * 0.3,
+                    height: 0.16,
+                    depth: 0.22,
+                    cornerRadius: 0.09
+                ),
+                materials: [bark]
+            )
+            root.position = [
+                -0.9 + Float(index) * 0.45,
+                -3.9,
+                0.65 + sin(Float(index) * 1.4) * 0.42
+            ]
+            root.orientation = simd_quatf(angle: -0.55 + Float(index) * 0.27, axis: [0, 1, 0])
+            productRoot.addChild(root)
+        }
         let product = try await NewSceneSupport.product(imageURL: imageURL, height: 2.55, name: "BotanicalProduct")
         product.position = [0, -4.8, 0.85]; productRoot.addChild(product)
         let ibl = try await NewSceneSupport.imageLight(id: "cloudy_netted_nursery", exponent: 1.25, parent: lights)
-        NewSceneSupport.receiveIBL([backdrop, floor, soil, pedestal] + stems + branches + leaves, light: ibl)
+        NewSceneSupport.receiveIBL(
+            [backdrop, floor, soil]
+                + soilRoot.children.compactMap { $0 as? ModelEntity }
+                + productRoot.children.compactMap { $0 as? ModelEntity }
+                + stems + branches + leaves,
+            light: ibl
+        )
         let skylight = SpotLight(); skylight.light = .init(color: NSColor(red: 1, green: 0.78, blue: 0.48, alpha: 1), intensity: 38_000, innerAngleInDegrees: 32, outerAngleInDegrees: 72, attenuationRadius: 20)
         lights.addChild(skylight)
         let fill = PointLight()
         fill.light = .init(color: NSColor(red: 0.45, green: 0.82, blue: 0.62, alpha: 1), intensity: 18_000, attenuationRadius: 10)
         fill.position = [-2.5, 0.5, 2.5]
         lights.addChild(fill)
-        let camera = NewSceneSupport.camera(focalLength: 48, name: "BotanicalPedestalCamera"); cameraRig.addChild(camera)
+        let camera = NewSceneSupport.camera(focalLength: 42, name: "BotanicalPedestalCamera"); cameraRig.addChild(camera)
         let scene = BluegumHelixScene(root: root, camera: camera, stemSegments: stems, continuousStem: continuousStem, branchlets: branches, leaves: leaves, product: product, tags: tags, skylight: skylight)
         scene.apply(frameIndex: 359); return scene
     }
@@ -104,11 +144,11 @@ final class BluegumHelixScene {
         skylight.look(at: [0, -0.3, 0], from: NewSceneSupport.mix([-4, 6, 1], [3, 7, -2], lightTravel), relativeTo: root)
         product.isEnabled = frame >= 276
         for (index, tag) in tags.enumerated() { tag.isEnabled = frame >= 318 + index * 6 }
-        let pedestal = NewSceneSupport.smooth(frame, 276, 322)
-        product.position.y = NewSceneSupport.mix(-4.8, -2.15, pedestal)
+        let revealProgress = NewSceneSupport.smooth(frame, 276, 322)
+        product.position.y = NewSceneSupport.mix(-4.8, -2.55, revealProgress)
         camera.look(
-            at: NewSceneSupport.mix([0, 0, -0.6], [0, -0.5, 0.2], pedestal),
-            from: NewSceneSupport.mix([-1.8, 0.6, 13.8], [1.1, 0.1, 11.2], pedestal),
+            at: NewSceneSupport.mix([0, 0, -0.6], [0, -1.75, 0.2], revealProgress),
+            from: NewSceneSupport.mix([-1.8, 0.6, 13.8], [1.1, -0.15, 11.8], revealProgress),
             relativeTo: root
         )
     }

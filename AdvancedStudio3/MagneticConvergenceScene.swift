@@ -24,20 +24,31 @@ final class MagneticConvergenceScene {
         let cameraRig = try NewSceneSupport.child("OrbitCameraRig", in: root)
         let lights = try NewSceneSupport.child("PulseLightRoot", in: root)
         let metal = try await NewSceneSupport.surfaceMaterial(id: "metal_plate_02", metallic: true)
-        var chamberMaterial = PhysicallyBasedMaterial()
-        chamberMaterial.baseColor = .init(tint: NSColor(red: 0.018, green: 0.021, blue: 0.028, alpha: 1))
-        chamberMaterial.roughness = 0.4
-        chamberMaterial.metallic = 0.72
-        let chamber = ModelEntity(mesh: .generateCylinder(height: 0.4, radius: 5.8), materials: [chamberMaterial])
-        chamber.orientation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0])
-        chamber.position.z = -2.2
+        let chamber = ModelEntity(
+            mesh: .generateBox(width: 13, height: 11, depth: 0.42, cornerRadius: 0.1),
+            materials: [metal]
+        )
+        chamber.position = [0, 0.6, -3.4]
         plateRoot.addChild(chamber)
-        let floor = ModelEntity(mesh: .generateBox(width: 13, height: 0.28, depth: 12, cornerRadius: 0.1), materials: [chamberMaterial])
+        let floor = ModelEntity(mesh: .generateBox(width: 13, height: 0.28, depth: 12, cornerRadius: 0.1), materials: [metal])
         floor.position = [0, -3.65, 0.8]
         plateRoot.addChild(floor)
-        let pedestal = ModelEntity(mesh: .generateCylinder(height: 0.5, radius: 1.3), materials: [metal])
-        pedestal.position = [0, -2.95, 0.45]
-        plateRoot.addChild(pedestal)
+        for side: Float in [-1, 1] {
+            let wall = ModelEntity(
+                mesh: .generateBox(width: 0.34, height: 10, depth: 11, cornerRadius: 0.07),
+                materials: [metal]
+            )
+            wall.position = [side * 6.1, 0.2, 0.5]
+            plateRoot.addChild(wall)
+        }
+        for index in 0..<5 {
+            let rail = ModelEntity(
+                mesh: .generateBox(width: 10.8, height: 0.12, depth: 0.18, cornerRadius: 0.035),
+                materials: [metal]
+            )
+            rail.position = [0, -2.5 + Float(index) * 1.65, -3.08]
+            plateRoot.addChild(rail)
+        }
         var plates: [ModelEntity] = [], origins: [SIMD3<Float>] = []
         for index in 0..<180 {
             let size: Float = index < 72 ? 0.16 : index < 126 ? 0.24 : index < 162 ? 0.34 : 0.48
@@ -55,7 +66,12 @@ final class MagneticConvergenceScene {
         copyRoot.addChild(title)
         let letters = [title]
         let ibl = try await NewSceneSupport.imageLight(id: "aircraft_workshop_01", exponent: 1.0, parent: lights)
-        NewSceneSupport.receiveIBL([chamber, floor, pedestal] + plates, light: ibl)
+        NewSceneSupport.receiveIBL(
+            [chamber, floor]
+                + plateRoot.children.compactMap { $0 as? ModelEntity }
+                + plates,
+            light: ibl
+        )
         let redBack = SpotLight()
         redBack.light = .init(color: NSColor(red: 1, green: 0.06, blue: 0.03, alpha: 1), intensity: 12_000, innerAngleInDegrees: 28, outerAngleInDegrees: 62, attenuationRadius: 16)
         redBack.look(at: [0, 0, 0], from: [0, 1, -5], relativeTo: root)

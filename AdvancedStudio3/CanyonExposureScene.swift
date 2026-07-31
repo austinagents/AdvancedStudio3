@@ -22,17 +22,28 @@ final class CanyonExposureScene {
         let cameraRig = try NewSceneSupport.child("CraneCameraRig", in: root)
         let lights = try NewSceneSupport.child("DesertSunRig", in: root)
         let cliff = try await NewSceneSupport.surfaceMaterial(id: "cliff_side")
-        let sky = ModelEntity(
-            mesh: .generateBox(width: 24, height: 30, depth: 0.2),
-            materials: [UnlitMaterial(color: NSColor(red: 0.18, green: 0.075, blue: 0.032, alpha: 1))]
+        let distantCliff = try await NewSceneSupport.surfaceMaterial(
+            id: "cliff_side",
+            tint: NSColor(red: 0.36, green: 0.17, blue: 0.09, alpha: 1)
         )
-        sky.position = [0, 3, -5]
-        world.addChild(sky)
+        let rearEscarpment = ModelEntity(
+            mesh: .generateBox(width: 18, height: 14, depth: 0.8, cornerRadius: 0.18),
+            materials: [distantCliff]
+        )
+        rearEscarpment.position = [0, 1.8, -7.2]
+        world.addChild(rearEscarpment)
+        for side: Float in [-1, 1] {
+            let canyonWall = ModelEntity(
+                mesh: .generateBox(width: 3.6, height: 12, depth: 15, cornerRadius: 0.22),
+                materials: [cliff]
+            )
+            canyonWall.position = [side * 6.7, 0.4, -0.8]
+            canyonWall.orientation = simd_quatf(angle: side * 0.045, axis: [0, 1, 0])
+            world.addChild(canyonWall)
+        }
 
         let ground = ModelEntity(mesh: .generateBox(width: 18, height: 0.35, depth: 20, cornerRadius: 0.12), materials: [cliff])
         ground.position = [0, -4.35, -1.5]; world.addChild(ground)
-        let heroLedge = ModelEntity(mesh: .generateBox(width: 4.2, height: 0.55, depth: 3.4, cornerRadius: 0.18), materials: [cliff])
-        heroLedge.position = [0.4, -2.7, 0.2]; world.addChild(heroLedge)
         var strata: [ModelEntity] = []
         for index in 0..<36 {
             let side: Float = index.isMultiple(of: 2) ? -1 : 1
@@ -55,11 +66,16 @@ final class CanyonExposureScene {
             strataRoot.addChild(layer); strata.append(layer)
         }
         let product = try await NewSceneSupport.product(imageURL: imageURL, height: 3.0, name: "EmbeddedProduct")
-        product.position = [0.4, -0.95, 0.65]; productRoot.addChild(product)
+        product.position = [0.4, -2.65, 0.65]; productRoot.addChild(product)
         let copy = NewSceneSupport.text("REVEALED BY TIME", fontName: "Optima-Regular", size: 0.22, color: NSColor(red: 0.96, green: 0.72, blue: 0.48, alpha: 1), depth: 0.012)
         copy.position = [-1.18, 2.0, 0.8]; copyRoot.addChild(copy)
         let ibl = try await NewSceneSupport.imageLight(id: "goegap", exponent: 0.2, parent: lights)
-        NewSceneSupport.receiveIBL([ground, heroLedge] + strata, light: ibl)
+        NewSceneSupport.receiveIBL(
+            [rearEscarpment, ground]
+                + world.children.compactMap { $0 as? ModelEntity }
+                + strata,
+            light: ibl
+        )
         let sun = DirectionalLight(); sun.light = .init(color: NSColor(red: 1, green: 0.56, blue: 0.26, alpha: 1), intensity: 18_000)
         sun.look(at: [0, 0, 0], from: [-8, 2.5, 4], relativeTo: root); lights.addChild(sun)
         let camera = NewSceneSupport.camera(focalLength: 24, name: "CanyonCraneCamera"); cameraRig.addChild(camera)
