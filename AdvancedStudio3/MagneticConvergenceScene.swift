@@ -33,7 +33,7 @@ final class MagneticConvergenceScene {
             let origin = SIMD3<Float>(cos(phase) * (5.8 + path), sin(phase * 0.73) * 4.6, -1.8 + path * 1.8)
             plate.position = origin; plateRoot.addChild(plate); plates.append(plate); origins.append(origin)
         }
-        let product = try await NewSceneSupport.product(imageURL: imageURL, height: 3.4, name: "MagneticProduct")
+        let product = try await NewSceneSupport.product(imageURL: imageURL, height: 2.4, name: "MagneticProduct")
         productRoot.addChild(product)
         var letters: [ModelEntity] = []
         for (index, character) in Array("DRAWN TOGETHER").enumerated() {

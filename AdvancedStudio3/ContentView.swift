@@ -342,7 +342,7 @@ struct ContentView: View {
                 }
             }
             Spacer()
-            Text("Only validated native templates appear in the production library.")
+            Text("Premium 02–11 are visible for review and remain incomplete.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -386,9 +386,23 @@ struct ContentView: View {
                             .offset(x: 54, y: -22)
                     }
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(template.libraryIndex)
-                            .font(.caption2.weight(.bold))
-                            .tracking(1.2)
+                        HStack {
+                            Text(template.libraryIndex)
+                                .font(.caption2.weight(.bold))
+                                .tracking(1.2)
+                            Spacer()
+                            Text(template.validity.rawValue)
+                                .font(.system(size: 9, weight: .bold, design: .rounded))
+                                .tracking(0.8)
+                                .foregroundStyle(
+                                    template.validity == .valid
+                                        ? Color.green
+                                        : Color.orange
+                                )
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 4)
+                                .background(.black.opacity(0.55), in: Capsule())
+                        }
                         Text(template.name)
                             .font(.headline)
                     }

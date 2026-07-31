@@ -51,7 +51,7 @@ final class TimberVaultScene {
             panel.position = [index % 2 == 0 ? -0.46 : 0.46, -3.72, index < 2 ? -4.46 : -3.54]
             hatchRoot.addChild(panel); hatchPanels.append(panel)
         }
-        let product = try await NewSceneSupport.product(imageURL: imageURL, height: 2.7, name: "VaultProduct")
+        let product = try await NewSceneSupport.product(imageURL: imageURL, height: 2.3, name: "VaultProduct")
         product.position = [0, -4.6, -4]; elevator.addChild(product)
         var plaques: [ModelEntity] = []
         for (index, word) in ["BUILT", "TO", "FRAME", "FORM"].enumerated() {

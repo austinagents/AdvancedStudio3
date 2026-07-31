@@ -77,7 +77,7 @@ final class OxideLightCutScene {
         shutters[1].position.x = NewSceneSupport.mix(1.45, 4.1, aperture)
         shutters[2].position.y = NewSceneSupport.mix(2.4, 5.8, aperture)
         shutters[3].position.y = NewSceneSupport.mix(-2.4, -5.8, aperture)
-        product.isEnabled = frame >= 240
+        product.isEnabled = frame >= 252
         copy.isEnabled = frame >= 332
         for (index, spot) in spots.enumerated() {
             let sweep = NewSceneSupport.smooth(frame, 332 + index * 6, 351)

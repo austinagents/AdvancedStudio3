@@ -51,7 +51,7 @@ final class CeramicImpactScene {
         cavity.position = [-0.68, -0.35, -0.7]
         facade.addChild(cavity)
 
-        let product = try await NewSceneSupport.product(imageURL: imageURL, height: 3.7, name: "FixedProduct")
+        let product = try await NewSceneSupport.product(imageURL: imageURL, height: 2.45, name: "FixedProduct")
         product.position = [-0.68, -0.35, -0.35]
         productSlot.addChild(product)
 
@@ -83,7 +83,7 @@ final class CeramicImpactScene {
             fragment.scale = .init(repeating: NewSceneSupport.mix(1, 0.72, impact))
             fragment.orientation = simd_quatf(angle: impact * (0.4 + Float(index % 9) * 0.11), axis: simd_normalize([sin(phase), cos(phase), 0.7]))
         }
-        product.isEnabled = frame >= 103
+        product.isEnabled = frame >= 252
         copy.isEnabled = frame >= 278
         copy.position.y = NewSceneSupport.mix(-5.7, -4.65, NewSceneSupport.smooth(frame, 278, 307))
         let impulse = frame >= 103 && frame <= 124 ? sin(Float(frame - 103) * 0.9) * exp(-Float(frame - 103) * 0.18) * 0.11 : 0

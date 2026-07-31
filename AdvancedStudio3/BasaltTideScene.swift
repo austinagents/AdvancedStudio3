@@ -46,7 +46,7 @@ final class BasaltTideScene {
             thread.position = [cos(angle) * 2.45, -0.3, -0.55 - abs(sin(angle)) * 0.25]
             threadRoot.addChild(thread); threads.append(thread)
         }
-        let product = try await NewSceneSupport.product(imageURL: imageURL, height: 2.25, name: "SuspendedProduct")
+        let product = try await NewSceneSupport.product(imageURL: imageURL, height: 2.05, name: "SuspendedProduct")
         product.position = [0, -0.25, 0]; productRoot.addChild(product)
         let stateOne = NewSceneSupport.text("STATE 01 / FLUX", fontName: "SFMono-Regular", size: 0.16, color: .cyan)
         let stateTwo = NewSceneSupport.text("STATE 02 / FORM", fontName: "SFMono-Regular", size: 0.16, color: .cyan)
@@ -68,7 +68,7 @@ final class BasaltTideScene {
         let drain = NewSceneSupport.smooth(frame, 192, 291)
         liquid.position.y = NewSceneSupport.mix(-4.9, -0.15, rise) - drain * 5.2
         liquid.scale.y = NewSceneSupport.mix(0.03, 1, rise) * NewSceneSupport.mix(1, 0.04, drain)
-        product.isEnabled = drain > 0.55
+        product.isEnabled = frame >= 252
         for (index, thread) in threads.enumerated() {
             let open = NewSceneSupport.smooth(frame, 192 + index * 4, 224 + index * 4)
             thread.isEnabled = open > 0

@@ -40,7 +40,7 @@ final class CanyonExposureScene {
             layer.position = [sin(Float(index) * 1.91) * 0.22, -5.15 + Float(index) * 0.16, -0.4 + cos(Float(index) * 1.37) * 0.12]
             strataRoot.addChild(layer); strata.append(layer)
         }
-        let product = try await NewSceneSupport.product(imageURL: imageURL, height: 2.8, name: "EmbeddedProduct")
+        let product = try await NewSceneSupport.product(imageURL: imageURL, height: 2.35, name: "EmbeddedProduct")
         product.position = [1.15, -1, 0.3]; productRoot.addChild(product)
         let copy = NewSceneSupport.text("REVEALED BY TIME", fontName: "Optima-Regular", size: 0.27, color: NSColor(red: 0.42, green: 0.19, blue: 0.07, alpha: 1), depth: 0.012)
         copy.position = [-2.6, -5.1, 2.8]; copy.orientation = simd_quatf(angle: -.pi / 2, axis: [1, 0, 0]); copyRoot.addChild(copy)
@@ -64,7 +64,7 @@ final class CanyonExposureScene {
             layer.scale.x = NewSceneSupport.mix(1, 0.001, erosion)
             layer.position.x = sin(Float(index) * 1.91) * 0.22 + erosion * (index.isMultiple(of: 2) ? -4.6 : 4.6)
         }
-        product.isEnabled = frame >= 232
+        product.isEnabled = frame >= 252
         let crane = NewSceneSupport.smooth(frame, 0, 339)
         camera.look(at: NewSceneSupport.mix([1.15, -1.1, 0], [0.35, 0.2, 0], crane), from: NewSceneSupport.mix([0.4, -3.1, 6.2], [0.4, 4.8, 13.5], crane), relativeTo: root)
         copy.isEnabled = frame >= 340

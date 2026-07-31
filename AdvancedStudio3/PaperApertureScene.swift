@@ -64,7 +64,7 @@ final class PaperApertureScene {
 
         let product = try await NewSceneSupport.product(
             imageURL: imageURL,
-            height: 3.0,
+            height: 2.35,
             name: "PaperApertureProduct"
         )
         product.position = [0, -1.25, 0.1]

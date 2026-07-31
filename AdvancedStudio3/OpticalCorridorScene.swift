@@ -70,7 +70,7 @@ final class OpticalCorridorScene {
 
         var slices: [ModelEntity] = []
         for index in 0..<3 {
-            let product = try await productSlice(imageURL: imageURL, index: index, height: 2.85)
+            let product = try await productSlice(imageURL: imageURL, index: index, height: 2.1)
             product.position = [Float(index - 1) * 2.4, -0.18, 0.15]
             sliceRoot.addChild(product)
             slices.append(product)
@@ -137,7 +137,7 @@ final class OpticalCorridorScene {
                 [0.72, -0.18, 0.15 + Float(index - 1) * 0.004],
                 alignment
             )
-            productSlices[index].isEnabled = frame >= 120
+            productSlices[index].isEnabled = frame >= 252
         }
         let cameraProgress = NewSceneSupport.smooth(frame, 248, 307)
         camera.look(

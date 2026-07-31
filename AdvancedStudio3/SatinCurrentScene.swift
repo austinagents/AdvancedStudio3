@@ -28,7 +28,7 @@ final class SatinCurrentScene {
         var satin = try await NewSceneSupport.surfaceMaterial(id: "crepe_satin")
         satin.faceCulling = .none
         let ribbon = ModelEntity(mesh: try ribbonMesh(frame: 0), materials: [satin]); ribbonRoot.addChild(ribbon)
-        let product = try await NewSceneSupport.product(imageURL: imageURL, height: 3.65, name: "SatinProduct")
+        let product = try await NewSceneSupport.product(imageURL: imageURL, height: 2.4, name: "SatinProduct")
         product.position = [-1.25, -0.35, 0]; productRoot.addChild(product)
         let copy = NewSceneSupport.text("MOVE WITH FORM", fontName: "HelveticaNeue-Italic", size: 0.31, color: NSColor(calibratedRed: 0.96, green: 0.88, blue: 0.74, alpha: 1))
         copy.position = [-5.5, -3.2, 0.7]; copyRoot.addChild(copy)
@@ -48,7 +48,7 @@ final class SatinCurrentScene {
     func apply(frameIndex: Int) {
         let frame = min(max(frameIndex, 0), 359)
         ribbon.model?.mesh = (try? Self.ribbonMesh(frame: frame)) ?? ribbon.model!.mesh
-        product.isEnabled = !(frame >= 216 && frame <= 251)
+        product.isEnabled = frame >= 252
         let travel = Float(frame) / 359
         let cameraX = NewSceneSupport.mix(4.8, -3.6, travel)
         product.position.x = cameraX - 1.25

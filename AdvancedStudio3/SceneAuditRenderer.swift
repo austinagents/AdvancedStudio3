@@ -17,7 +17,7 @@ enum SceneAuditRenderer {
         let outputURL = URL(fileURLWithPath: outputPath, isDirectory: true)
         do {
             try FileManager.default.createDirectory(at: outputURL, withIntermediateDirectories: true)
-            for template in StudioTemplate.allCases where template != .opticalMesh {
+            for template in StudioTemplate.candidateCases {
                 let templateDirectory = outputURL.appendingPathComponent(template.rawValue, isDirectory: true)
                 try FileManager.default.createDirectory(at: templateDirectory, withIntermediateDirectories: true)
                 let frames = validationFrames(for: template)
@@ -37,17 +37,16 @@ enum SceneAuditRenderer {
     private static func validationFrames(for template: StudioTemplate) -> [Int] {
         switch template {
         case .opticalMesh: [0, 120, 210, 239]
-        case .mineralFold: [0, 72, 154, 224, 300, 359]
-        case .opticalCorridor: [0, 88, 176, 224, 292, 336, 359]
-        case .paperAperture: [0, 52, 128, 188, 238, 288, 332, 359]
-        case .ceramicImpact: [0, 96, 108, 160, 232, 288, 359]
-        case .basaltTide: [0, 72, 156, 216, 244, 280, 320, 359]
-        case .satinCurrent: [0, 70, 152, 224, 268, 324, 359]
-        case .canyonExposure: [0, 88, 124, 160, 208, 248, 304, 350, 359]
-        case .timberVault: [0, 68, 128, 188, 268, 304, 336, 359]
-        case .bluegumHelix: [0, 96, 192, 252, 300, 330, 359]
-        case .magneticConvergence: [0, 48, 112, 176, 232, 272, 304, 336, 359]
-        case .oxideLightCut: [0, 80, 144, 208, 264, 316, 340, 359]
+        case .opticalCorridor: [0, 180, 251, 276, 320, 359]
+        case .paperAperture: [0, 180, 251, 276, 320, 359]
+        case .ceramicImpact: [0, 180, 251, 276, 320, 359]
+        case .basaltTide: [0, 180, 251, 276, 320, 359]
+        case .satinCurrent: [0, 180, 251, 276, 320, 359]
+        case .canyonExposure: [0, 180, 251, 276, 320, 359]
+        case .timberVault: [0, 180, 251, 276, 320, 359]
+        case .bluegumHelix: [0, 180, 251, 276, 320, 359]
+        case .magneticConvergence: [0, 180, 251, 276, 320, 359]
+        case .oxideLightCut: [0, 180, 251, 276, 320, 359]
         }
     }
 

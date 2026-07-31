@@ -4,7 +4,6 @@ import SwiftUI
 @MainActor
 enum StudioScene {
     case opticalMesh(PremiumAdScene)
-    case marbleOrbit(MarbleOrbitScene)
     case opticalCorridor(OpticalCorridorScene)
     case paperAperture(PaperApertureScene)
     case ceramicImpact(CeramicImpactScene)
@@ -16,86 +15,67 @@ enum StudioScene {
     case magneticConvergence(MagneticConvergenceScene)
     case oxideLightCut(OxideLightCutScene)
 
-    static func load(
-        template: StudioTemplate,
-        imageURL: URL
-    ) async throws -> StudioScene {
+    static func load(template: StudioTemplate, imageURL: URL) async throws -> StudioScene {
         switch template {
-        case .opticalMesh:
-            .opticalMesh(try await PremiumAdScene.load(imageURL: imageURL))
-        case .mineralFold:
-            .marbleOrbit(try await MarbleOrbitScene.load(imageURL: imageURL))
-        case .opticalCorridor:
-            .opticalCorridor(try await OpticalCorridorScene.load(imageURL: imageURL))
-        case .paperAperture:
-            .paperAperture(try await PaperApertureScene.load(imageURL: imageURL))
-        case .ceramicImpact:
-            .ceramicImpact(try await CeramicImpactScene.load(imageURL: imageURL))
-        case .basaltTide:
-            .basaltTide(try await BasaltTideScene.load(imageURL: imageURL))
-        case .satinCurrent:
-            .satinCurrent(try await SatinCurrentScene.load(imageURL: imageURL))
-        case .canyonExposure:
-            .canyonExposure(try await CanyonExposureScene.load(imageURL: imageURL))
-        case .timberVault:
-            .timberVault(try await TimberVaultScene.load(imageURL: imageURL))
-        case .bluegumHelix:
-            .bluegumHelix(try await BluegumHelixScene.load(imageURL: imageURL))
-        case .magneticConvergence:
-            .magneticConvergence(try await MagneticConvergenceScene.load(imageURL: imageURL))
-        case .oxideLightCut:
-            .oxideLightCut(try await OxideLightCutScene.load(imageURL: imageURL))
+        case .opticalMesh: .opticalMesh(try await PremiumAdScene.load(imageURL: imageURL))
+        case .opticalCorridor: .opticalCorridor(try await OpticalCorridorScene.load(imageURL: imageURL))
+        case .paperAperture: .paperAperture(try await PaperApertureScene.load(imageURL: imageURL))
+        case .ceramicImpact: .ceramicImpact(try await CeramicImpactScene.load(imageURL: imageURL))
+        case .basaltTide: .basaltTide(try await BasaltTideScene.load(imageURL: imageURL))
+        case .satinCurrent: .satinCurrent(try await SatinCurrentScene.load(imageURL: imageURL))
+        case .canyonExposure: .canyonExposure(try await CanyonExposureScene.load(imageURL: imageURL))
+        case .timberVault: .timberVault(try await TimberVaultScene.load(imageURL: imageURL))
+        case .bluegumHelix: .bluegumHelix(try await BluegumHelixScene.load(imageURL: imageURL))
+        case .magneticConvergence: .magneticConvergence(try await MagneticConvergenceScene.load(imageURL: imageURL))
+        case .oxideLightCut: .oxideLightCut(try await OxideLightCutScene.load(imageURL: imageURL))
         }
     }
 
     var root: Entity {
         switch self {
-        case .opticalMesh(let scene): scene.root
-        case .marbleOrbit(let scene): scene.root
-        case .opticalCorridor(let scene): scene.root
-        case .paperAperture(let scene): scene.root
-        case .ceramicImpact(let scene): scene.root
-        case .basaltTide(let scene): scene.root
-        case .satinCurrent(let scene): scene.root
-        case .canyonExposure(let scene): scene.root
-        case .timberVault(let scene): scene.root
-        case .bluegumHelix(let scene): scene.root
-        case .magneticConvergence(let scene): scene.root
-        case .oxideLightCut(let scene): scene.root
+        case .opticalMesh(let value): value.root
+        case .opticalCorridor(let value): value.root
+        case .paperAperture(let value): value.root
+        case .ceramicImpact(let value): value.root
+        case .basaltTide(let value): value.root
+        case .satinCurrent(let value): value.root
+        case .canyonExposure(let value): value.root
+        case .timberVault(let value): value.root
+        case .bluegumHelix(let value): value.root
+        case .magneticConvergence(let value): value.root
+        case .oxideLightCut(let value): value.root
         }
     }
 
     var camera: PerspectiveCamera {
         switch self {
-        case .opticalMesh(let scene): scene.camera
-        case .marbleOrbit(let scene): scene.camera
-        case .opticalCorridor(let scene): scene.camera
-        case .paperAperture(let scene): scene.camera
-        case .ceramicImpact(let scene): scene.camera
-        case .basaltTide(let scene): scene.camera
-        case .satinCurrent(let scene): scene.camera
-        case .canyonExposure(let scene): scene.camera
-        case .timberVault(let scene): scene.camera
-        case .bluegumHelix(let scene): scene.camera
-        case .magneticConvergence(let scene): scene.camera
-        case .oxideLightCut(let scene): scene.camera
+        case .opticalMesh(let value): value.camera
+        case .opticalCorridor(let value): value.camera
+        case .paperAperture(let value): value.camera
+        case .ceramicImpact(let value): value.camera
+        case .basaltTide(let value): value.camera
+        case .satinCurrent(let value): value.camera
+        case .canyonExposure(let value): value.camera
+        case .timberVault(let value): value.camera
+        case .bluegumHelix(let value): value.camera
+        case .magneticConvergence(let value): value.camera
+        case .oxideLightCut(let value): value.camera
         }
     }
 
     func apply(frameIndex: Int) {
         switch self {
-        case .opticalMesh(let scene): scene.apply(frameIndex: frameIndex)
-        case .marbleOrbit(let scene): scene.apply(frameIndex: frameIndex)
-        case .opticalCorridor(let scene): scene.apply(frameIndex: frameIndex)
-        case .paperAperture(let scene): scene.apply(frameIndex: frameIndex)
-        case .ceramicImpact(let scene): scene.apply(frameIndex: frameIndex)
-        case .basaltTide(let scene): scene.apply(frameIndex: frameIndex)
-        case .satinCurrent(let scene): scene.apply(frameIndex: frameIndex)
-        case .canyonExposure(let scene): scene.apply(frameIndex: frameIndex)
-        case .timberVault(let scene): scene.apply(frameIndex: frameIndex)
-        case .bluegumHelix(let scene): scene.apply(frameIndex: frameIndex)
-        case .magneticConvergence(let scene): scene.apply(frameIndex: frameIndex)
-        case .oxideLightCut(let scene): scene.apply(frameIndex: frameIndex)
+        case .opticalMesh(let value): value.apply(frameIndex: frameIndex)
+        case .opticalCorridor(let value): value.apply(frameIndex: frameIndex)
+        case .paperAperture(let value): value.apply(frameIndex: frameIndex)
+        case .ceramicImpact(let value): value.apply(frameIndex: frameIndex)
+        case .basaltTide(let value): value.apply(frameIndex: frameIndex)
+        case .satinCurrent(let value): value.apply(frameIndex: frameIndex)
+        case .canyonExposure(let value): value.apply(frameIndex: frameIndex)
+        case .timberVault(let value): value.apply(frameIndex: frameIndex)
+        case .bluegumHelix(let value): value.apply(frameIndex: frameIndex)
+        case .magneticConvergence(let value): value.apply(frameIndex: frameIndex)
+        case .oxideLightCut(let value): value.apply(frameIndex: frameIndex)
         }
     }
 }
@@ -103,7 +83,6 @@ enum StudioScene {
 struct ProductSceneView: View {
     let scene: StudioScene
     let frameIndex: Int
-
     var body: some View {
         RealityView { content in
             content.add(scene.root)
@@ -114,9 +93,7 @@ struct ProductSceneView: View {
         } placeholder: {
             ZStack {
                 Color.black
-                ProgressView("Loading scene…")
-                    .tint(.white)
-                    .foregroundStyle(.white)
+                ProgressView("Loading scene…").tint(.white).foregroundStyle(.white)
             }
         }
     }
