@@ -117,7 +117,6 @@ final class AnamorphicCourtScene {
       "ONE OBJECT. EVERY ANGLE.", fontName: "AvenirNext-Medium", size: 0.17,
       color: NSColor(red: 0.08, green: 0.06, blue: 0.035, alpha: 1))
     brand.position = [-0.95, -3.15, 1.4]
-    brandRoot.addChild(brand)
 
     let ibl = try await NewSceneSupport.imageLight(
       id: "ferndale_studio_02", exponent: 1.35, parent: sunRig)
