@@ -34,6 +34,8 @@ enum StudioScene {
   case escapementZero(EscapementZeroScene)
   case sixAxisCeremony(SixAxisCeremonyScene)
   case threadline(ThreadlineScene)
+  case batch2(Batch2ProductionScene)
+  case liquidImpact(LiquidImpactScene)
 
   static func load(template: StudioTemplate, imageURL: URL) async throws -> StudioScene {
     switch template {
@@ -71,6 +73,17 @@ enum StudioScene {
     case .escapementZero: .escapementZero(try await EscapementZeroScene.load(imageURL: imageURL))
     case .sixAxisCeremony: .sixAxisCeremony(try await SixAxisCeremonyScene.load(imageURL: imageURL))
     case .threadline: .threadline(try await ThreadlineScene.load(imageURL: imageURL))
+    case .coastalRelay: .batch2(try await Batch2ProductionScene.load(style: .coastalRelay, imageURL: imageURL))
+    case .glasshouseRise: .batch2(try await Batch2ProductionScene.load(style: .glasshouseRise, imageURL: imageURL))
+    case .alpineWake: .batch2(try await Batch2ProductionScene.load(style: .alpineWake, imageURL: imageURL))
+    case .kineticFacade: .batch2(try await Batch2ProductionScene.load(style: .kineticFacade, imageURL: imageURL))
+    case .rainlightPavilion: .batch2(try await Batch2ProductionScene.load(style: .rainlightPavilion, imageURL: imageURL))
+    case .observatoryTransit: .batch2(try await Batch2ProductionScene.load(style: .observatoryTransit, imageURL: imageURL))
+    case .aerodynamicTrace: .batch2(try await Batch2ProductionScene.load(style: .aerodynamicTrace, imageURL: imageURL))
+    case .chromaticElevator: .batch2(try await Batch2ProductionScene.load(style: .chromaticElevator, imageURL: imageURL))
+    case .terracedDawn: .batch2(try await Batch2ProductionScene.load(style: .terracedDawn, imageURL: imageURL))
+    case .haloStage: .batch2(try await Batch2ProductionScene.load(style: .haloStage, imageURL: imageURL))
+    case .liquidImpact: .liquidImpact(try await LiquidImpactScene.load(imageURL: imageURL))
     }
   }
 
@@ -107,6 +120,8 @@ enum StudioScene {
     case .escapementZero(let v): v.root
     case .sixAxisCeremony(let v): v.root
     case .threadline(let v): v.root
+    case .batch2(let v): v.root
+    case .liquidImpact(let v): v.root
     }
   }
 
@@ -143,6 +158,8 @@ enum StudioScene {
     case .escapementZero(let v): v.camera
     case .sixAxisCeremony(let v): v.camera
     case .threadline(let v): v.camera
+    case .batch2(let v): v.camera
+    case .liquidImpact(let v): v.camera
     }
   }
 
@@ -179,6 +196,8 @@ enum StudioScene {
     case .escapementZero(let v): v.apply(frameIndex: frameIndex)
     case .sixAxisCeremony(let v): v.apply(frameIndex: frameIndex)
     case .threadline(let v): v.apply(frameIndex: frameIndex)
+    case .batch2(let v): v.apply(frameIndex: frameIndex)
+    case .liquidImpact(let v): v.apply(frameIndex: frameIndex)
     }
   }
 }

@@ -44,6 +44,17 @@ enum StudioTemplate: String, CaseIterable, Identifiable, Sendable {
   case escapementZero = "escapement-zero-218"
   case sixAxisCeremony = "six-axis-ceremony-219"
   case threadline = "threadline-220"
+  case coastalRelay = "coastal-relay-221"
+  case glasshouseRise = "glasshouse-rise-222"
+  case alpineWake = "alpine-wake-223"
+  case kineticFacade = "kinetic-facade-224"
+  case rainlightPavilion = "rainlight-pavilion-225"
+  case observatoryTransit = "observatory-transit-226"
+  case aerodynamicTrace = "aerodynamic-trace-227"
+  case chromaticElevator = "chromatic-elevator-228"
+  case terracedDawn = "terraced-dawn-229"
+  case haloStage = "halo-stage-230"
+  case liquidImpact = "liquid-impact-231"
 
   static let candidateCases: [StudioTemplate] = [
     .vacuumCast, .anamorphicCourt, .moireEngine, .axisHouse, .pressureMark,
@@ -53,6 +64,9 @@ enum StudioTemplate: String, CaseIterable, Identifiable, Sendable {
     .opticalCorridor, .paperAperture, .ceramicImpact, .basaltTide,
     .satinCurrent, .canyonExposure, .timberVault, .bluegumHelix,
     .magneticConvergence, .oxideLightCut,
+    .coastalRelay, .glasshouseRise, .alpineWake, .kineticFacade,
+    .rainlightPavilion, .observatoryTransit, .aerodynamicTrace,
+    .chromaticElevator, .terracedDawn, .haloStage, .liquidImpact,
   ]
   static let userFacingCases: [StudioTemplate] = [
     .opticalMesh,
@@ -80,13 +94,25 @@ enum StudioTemplate: String, CaseIterable, Identifiable, Sendable {
     .gravityScript,
     .crystalTension,
     .monolithBloom,
+    .coastalRelay, .glasshouseRise, .alpineWake, .kineticFacade,
+    .rainlightPavilion, .observatoryTransit, .aerodynamicTrace,
+    .chromaticElevator, .terracedDawn, .haloStage, .liquidImpact,
   ]
   static let archivedCases: [StudioTemplate] = []
+  static let batch2Cases: [StudioTemplate] = [
+    .coastalRelay, .glasshouseRise, .alpineWake, .kineticFacade,
+    .rainlightPavilion, .observatoryTransit, .aerodynamicTrace,
+    .chromaticElevator, .terracedDawn, .haloStage, .liquidImpact,
+  ]
+  static let batch1Cases = userFacingCases.filter { !batch2Cases.contains($0) }
 
   var id: String { rawValue }
   var validity: TemplateValidity {
     switch self {
-    case .opticalMesh, .canyonExposure, .timberVault, .bluegumHelix, .magneticConvergence:
+    case .opticalMesh, .canyonExposure, .timberVault, .bluegumHelix, .magneticConvergence,
+      .coastalRelay, .glasshouseRise, .alpineWake, .kineticFacade,
+      .rainlightPavilion, .observatoryTransit, .aerodynamicTrace,
+      .chromaticElevator, .terracedDawn, .haloStage, .liquidImpact:
       .valid
     default:
       .incomplete
@@ -126,6 +152,17 @@ enum StudioTemplate: String, CaseIterable, Identifiable, Sendable {
     case .escapementZero: "Escapement Zero"
     case .sixAxisCeremony: "Six-Axis Ceremony"
     case .threadline: "Threadline"
+    case .coastalRelay: "Coastal Relay"
+    case .glasshouseRise: "Glasshouse Rise"
+    case .alpineWake: "Alpine Wake"
+    case .kineticFacade: "Kinetic Façade"
+    case .rainlightPavilion: "Rainlight Pavilion"
+    case .observatoryTransit: "Observatory Transit"
+    case .aerodynamicTrace: "Aerodynamic Trace"
+    case .chromaticElevator: "Chromatic Elevator"
+    case .terracedDawn: "Terraced Dawn"
+    case .haloStage: "Halo Stage"
+    case .liquidImpact: "Liquid Impact"
     }
   }
 
@@ -162,6 +199,17 @@ enum StudioTemplate: String, CaseIterable, Identifiable, Sendable {
     case .escapementZero: "PREMIUM 29"
     case .sixAxisCeremony: "PREMIUM 30"
     case .threadline: "PREMIUM 31"
+    case .coastalRelay: "PREMIUM 32"
+    case .glasshouseRise: "PREMIUM 33"
+    case .alpineWake: "PREMIUM 34"
+    case .kineticFacade: "PREMIUM 35"
+    case .rainlightPavilion: "PREMIUM 36"
+    case .observatoryTransit: "PREMIUM 37"
+    case .aerodynamicTrace: "PREMIUM 38"
+    case .chromaticElevator: "PREMIUM 39"
+    case .terracedDawn: "PREMIUM 40"
+    case .haloStage: "PREMIUM 41"
+    case .liquidImpact: "PREMIUM 42"
     }
   }
 
@@ -198,11 +246,29 @@ enum StudioTemplate: String, CaseIterable, Identifiable, Sendable {
     case .escapementZero: "Horological Release · Escapement Zero"
     case .sixAxisCeremony: "Robotic Handoff · Six-Axis Ceremony"
     case .threadline: "Threaded Extraction · Threadline"
+    case .coastalRelay: "Tidal Passage · Coastal Relay"
+    case .glasshouseRise: "Botanical Aperture · Glasshouse Rise"
+    case .alpineWake: "Atmospheric Ascent · Alpine Wake"
+    case .kineticFacade: "Architectural Choreography · Kinetic Façade"
+    case .rainlightPavilion: "Weather Illumination · Rainlight Pavilion"
+    case .observatoryTransit: "Celestial Alignment · Observatory Transit"
+    case .aerodynamicTrace: "Flow Capture · Aerodynamic Trace"
+    case .chromaticElevator: "Prismatic Lift · Chromatic Elevator"
+    case .terracedDawn: "Solar Progression · Terraced Dawn"
+    case .haloStage: "Luminous Ceremony · Halo Stage"
+    case .liquidImpact: "Reactive Environment · Liquid Impact"
     }
   }
 
   var specification: AdSpecification {
-    self == .opticalMesh ? .legacyEightSeconds : .premiumTwelveSeconds
+    switch self {
+    case .coastalRelay, .glasshouseRise, .alpineWake, .kineticFacade,
+      .rainlightPavilion, .observatoryTransit, .aerodynamicTrace,
+      .chromaticElevator, .terracedDawn, .haloStage:
+      .premiumFifteenSeconds
+    default:
+      self == .opticalMesh ? .legacyEightSeconds : .premiumTwelveSeconds
+    }
   }
 
   var heroFrame: Int {
@@ -216,6 +282,14 @@ enum StudioTemplate: String, CaseIterable, Identifiable, Sendable {
         .init(title: "LATTICE FORM", range: "0.7–4.8s", width: 2.5),
         .init(title: "PRODUCT REVEAL", range: "4.1–5.5s", width: 1.5),
         .init(title: "COPY / HOLD", range: "6.2–8s", width: 2),
+      ]
+    }
+    if specification == .premiumFifteenSeconds {
+      return [
+        .init(title: "ARRIVAL", range: "0–4.5s", width: 4.5),
+        .init(title: "SPATIAL EVENT", range: "4.5–10s", width: 5.5),
+        .init(title: "PRODUCT REVEAL", range: "10–13s", width: 3),
+        .init(title: "HERO / HOLD", range: "13–15s", width: 2),
       ]
     }
     return [

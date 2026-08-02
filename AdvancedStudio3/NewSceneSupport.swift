@@ -141,6 +141,106 @@ enum NewSceneSupport {
         return entity
     }
 
+    // Experimental shallow-volume product representation.
+    // Isolated to templates that explicitly opt into spatialProduct().
+    // The source cutout is repeated through real Z space so modest
+    // perspective movement produces depth/parallax instead of a single plane.
+    static func spatialProduct(
+        imageURL: URL,
+        height: Float,
+        name: String,
+        depth: Float = 0.12
+    ) async throws -> Entity {
+        let root = Entity()
+        root.name = name
+
+        let texture = try await TextureResource(contentsOf: imageURL)
+        let width = height * imageAspectRatio(imageURL)
+
+        // Back-to-front shallow volume.
+        // Center layers carry most of the visible product.
+        let layerCount = 9
+
+        for index in 0..<layerCount {
+            let normalized =
+                Float(index) / Float(layerCount - 1) * 2.0 - 1.0
+
+            // Slightly taper rear/front layers to imply curved volume.
+            let profile =
+                sqrt(max(0, 1.0 - normalized * normalized))
+
+            let layerScale =
+                0.965 + profile * 0.035
+
+            var material = PhysicallyBasedMaterial()
+            material.baseColor = .init(
+                tint: .white,
+                texture: .init(texture)
+            )
+            material.roughness = .init(
+                floatLiteral: 0.20 + abs(normalized) * 0.12
+            )
+            material.metallic = .init(floatLiteral: 0.025)
+            material.blending = .transparent(
+                opacity: .init(floatLiteral: 1)
+            )
+            material.opacityThreshold = 0.025
+            material.faceCulling = .none
+
+            let layer = ModelEntity(
+                mesh: .generatePlane(
+                    width: width,
+                    height: height
+                ),
+                materials: [material]
+            )
+
+            layer.name = "\(name)_DepthLayer_\(index)"
+
+            // RealityKit plane faces camera; Z gives actual spatial separation.
+            layer.position.z = normalized * depth * 0.5
+
+            layer.scale = [
+                layerScale,
+                1.0,
+                1.0
+            ]
+
+            root.addChild(layer)
+        }
+
+        // Thin dark backing gives the silhouette visual mass when viewed
+        // slightly off-axis without pretending we know the unseen backside.
+        var backingMaterial = PhysicallyBasedMaterial()
+        backingMaterial.baseColor = .init(
+            tint: NSColor(
+                red: 0.035,
+                green: 0.040,
+                blue: 0.050,
+                alpha: 1
+            )
+        )
+        backingMaterial.roughness = .init(floatLiteral: 0.30)
+        backingMaterial.metallic = .init(floatLiteral: 0.08)
+
+        let backing = ModelEntity(
+            mesh: .generateBox(
+                width: width * 0.94,
+                height: height * 0.94,
+                depth: depth * 0.72,
+                cornerRadius: min(width, height) * 0.035
+            ),
+            materials: [backingMaterial]
+        )
+
+        backing.name = "\(name)_DepthCore"
+        backing.position.z = -depth * 0.42
+
+        root.addChild(backing)
+
+        return root
+    }
+
     static func camera(focalLength: Float, name: String) -> PerspectiveCamera {
         let camera = PerspectiveCamera()
         camera.name = name

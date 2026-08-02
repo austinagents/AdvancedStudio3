@@ -241,6 +241,8 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var session = StudioSession()
     @State private var isImporting = false
+    @State private var isBatch1Expanded = true
+    @State private var isBatch2Expanded = true
 
     var body: some View {
         VStack(spacing: 0) {
@@ -341,9 +343,16 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 16) {
             panelTitle("TEMPLATE LIBRARY", subtitle: "Curated motion systems")
             ScrollView(.vertical) {
-                LazyVStack(spacing: 14) {
-                    ForEach(StudioTemplate.userFacingCases) { template in
-                        templateCard(template)
+                VStack(spacing: 14) {
+                    DisclosureGroup(isExpanded: $isBatch1Expanded) {
+                        LazyVStack(spacing: 14) {
+                            ForEach(StudioTemplate.batch1Cases) { template in
+                                templateCard(template)
+                            }
+                        }
+                        .padding(.top, 12)
+                    } label: {
+                        librarySectionLabel("BATCH 1", count: StudioTemplate.batch1Cases.count)
                     }
 
                     Text("Premium 07–10 are valid refinement candidates, not production-ready.")
@@ -351,11 +360,36 @@ struct ContentView: View {
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
+
+                    DisclosureGroup(isExpanded: $isBatch2Expanded) {
+                        LazyVStack(spacing: 14) {
+                            ForEach(StudioTemplate.batch2Cases) { template in
+                                templateCard(template)
+                            }
+                        }
+                        .padding(.top, 12)
+                    } label: {
+                        librarySectionLabel("BATCH 2", count: StudioTemplate.batch2Cases.count)
+                    }
                 }
+                .tint(.secondary)
             }
             .scrollIndicators(.visible)
         }
         .padding(20)
+    }
+
+    private func librarySectionLabel(_ title: String, count: Int) -> some View {
+        HStack {
+            Label(title, systemImage: "square.stack.3d.up.fill")
+                .font(.caption.weight(.bold))
+                .tracking(1.1)
+            Spacer()
+            Text("\(count)")
+                .font(.caption2.monospacedDigit().weight(.semibold))
+                .foregroundStyle(.secondary)
+        }
+        .foregroundStyle(.white)
     }
 
     private func templateCard(_ template: StudioTemplate) -> some View {
@@ -368,13 +402,7 @@ struct ContentView: View {
                     RoundedRectangle(cornerRadius: 12)
                         .fill(
                             LinearGradient(
-                                colors: template == .opticalMesh
-                                    ? [.blue.opacity(0.72), .indigo.opacity(0.25), .black]
-                                    : [
-                                        Color(red: 0.58, green: 0.27, blue: 0.08),
-                                        Color(red: 0.18, green: 0.10, blue: 0.07),
-                                        .black
-                                ],
+                                colors: templateCardColors(template),
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
@@ -436,6 +464,23 @@ struct ContentView: View {
         }
         .buttonStyle(.plain)
         .disabled(session.state == .processing || session.state == .exporting)
+    }
+
+    private func templateCardColors(_ template: StudioTemplate) -> [Color] {
+        switch template {
+        case .coastalRelay: [.cyan.opacity(0.72), Color(red: 0.62, green: 0.39, blue: 0.24), .black]
+        case .glasshouseRise: [.green.opacity(0.68), Color(red: 0.46, green: 0.33, blue: 0.15), .black]
+        case .alpineWake: [Color(red: 0.68, green: 0.80, blue: 0.90), Color(red: 0.16, green: 0.26, blue: 0.36), .black]
+        case .kineticFacade: [.orange, .blue.opacity(0.65), .black]
+        case .rainlightPavilion: [Color(red: 0.18, green: 0.48, blue: 0.62), Color(red: 0.25, green: 0.14, blue: 0.09), .black]
+        case .observatoryTransit: [.indigo.opacity(0.82), .orange.opacity(0.72), .black]
+        case .aerodynamicTrace: [.white, .red.opacity(0.78), .black]
+        case .chromaticElevator: [.pink.opacity(0.80), .cyan.opacity(0.72), .black]
+        case .terracedDawn: [.orange.opacity(0.90), Color(red: 0.42, green: 0.16, blue: 0.07), .black]
+        case .haloStage: [.purple.opacity(0.76), .orange.opacity(0.82), .black]
+        case .opticalMesh: [.blue.opacity(0.72), .indigo.opacity(0.25), .black]
+        default: [Color(red: 0.58, green: 0.27, blue: 0.08), Color(red: 0.18, green: 0.10, blue: 0.07), .black]
+        }
     }
 
     private var preview: some View {

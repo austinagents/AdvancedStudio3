@@ -18,6 +18,7 @@ nonisolated struct AdSpecification: Hashable, Sendable {
 
     static let legacyEightSeconds = AdSpecification(frameCount: 240)
     static let premiumTwelveSeconds = AdSpecification(frameCount: 360)
+    static let premiumFifteenSeconds = AdSpecification(frameCount: 450)
 
     var duration: TimeInterval {
         Double(frameCount) / Double(frameRate)

@@ -18,12 +18,29 @@ enum SceneAuditRenderer {
     let outputURL = URL(fileURLWithPath: outputPath, isDirectory: true)
     do {
       try FileManager.default.createDirectory(at: outputURL, withIntermediateDirectories: true)
-      for template in StudioTemplate.candidateCases {
+      let templates: [StudioTemplate]
+      if let rawValue = environment["AS3_AUDIT_TEMPLATE"],
+        let template = StudioTemplate(rawValue: rawValue)
+      {
+        templates = [template]
+      } else if environment["AS3_AUDIT_BATCH"] == "2" {
+        templates = [.coastalRelay, .glasshouseRise, .alpineWake, .kineticFacade,
+          .rainlightPavilion, .observatoryTransit, .aerodynamicTrace,
+          .chromaticElevator, .terracedDawn, .haloStage]
+      } else {
+        templates = StudioTemplate.candidateCases
+      }
+      for template in templates {
         let templateDirectory = outputURL.appendingPathComponent(
           template.rawValue, isDirectory: true)
         try FileManager.default.createDirectory(
           at: templateDirectory, withIntermediateDirectories: true)
-        let frames = validationFrames(for: template)
+        let frames: [Int]
+        if let rawFrame = environment["AS3_AUDIT_FRAME"], let frame = Int(rawFrame) {
+          frames = [template.specification.clamped(frame)]
+        } else {
+          frames = validationFrames(for: template)
+        }
         let scene = try await StudioScene.load(template: template, imageURL: productURL)
         for frame in frames {
           let destination = templateDirectory.appendingPathComponent(
@@ -57,8 +74,12 @@ enum SceneAuditRenderer {
       .chronoSand, .thermalAlloy, .porcelainEcho, .gravityScript,
       .crystalTension, .monolithBloom, .vacuumCast, .anamorphicCourt,
       .moireEngine, .axisHouse, .pressureMark, .contactSheet,
-      .seamRelease, .escapementZero, .sixAxisCeremony, .threadline:
+      .seamRelease, .escapementZero, .sixAxisCeremony, .threadline, .liquidImpact:
       [0, 60, 180, 225, 270, 315, 359]
+    case .coastalRelay, .glasshouseRise, .alpineWake, .kineticFacade,
+      .rainlightPavilion, .observatoryTransit, .aerodynamicTrace,
+      .chromaticElevator, .terracedDawn, .haloStage:
+      [0, 45, 90, 135, 180, 225, 270, 330, 390, 449]
     }
   }
 
